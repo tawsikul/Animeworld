@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060812">
+<title>Anime World — find it, track it, watch it</title>
+<meta name="description" content="Search thousands of anime, see live episode countdowns, find where each show legally streams, and keep a list that follows you.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Anime World">
+<meta property="og:image" content="icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta property="og:title" content="Anime World — find it, track it, watch it">
+<meta property="og:description" content="Search thousands of anime, see live episode countdowns, find where each show legally streams, and keep a list that follows you.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Chakra+Petch:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&family=Zen+Dots&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ---------- hero: a title card, not a centred banner ---------- */
+.hero{ position:relative; padding:calc(var(--nav-h) + 42px) 0 40px; overflow:hidden; }
+.hero-inner{ display:grid; grid-template-columns:1.15fr .85fr; gap:clamp(24px,4vw,60px); align-items:center; }
+
+.hero-mark{ display:flex; align-items:flex-start; gap:18px; }
+.hero-jp{
+  writing-mode:vertical-rl; font-family:'Zen Kaku Gothic New',sans-serif; font-weight:700;
+  font-size:clamp(13px,1.5vw,16px); letter-spacing:.42em; color:var(--accent);
+  opacity:0; animation:jpIn 1s var(--ease) .35s forwards; padding-top:6px; white-space:nowrap;
+}
+@keyframes jpIn{ from{ opacity:0; transform:translateY(-22px); } to{ opacity:.9; transform:none; } }
+
+.hero h1{ font-size:clamp(52px,11.5vw,138px); line-height:.82; color:var(--paper); }
+.hero h1 .l{ display:block; overflow:hidden; }
+.hero h1 .l > i{
+  display:block; font-style:normal; transform:translateY(105%);
+  animation:lineUp .95s var(--ease) forwards;
+}
+.hero h1 .l:nth-child(2) > i{ animation-delay:.13s; color:var(--accent); }
+@keyframes lineUp{ to{ transform:none; } }
+
+.hero .lede{
+  margin-top:22px; max-width:46ch; font-size:clamp(15px,1.9vw,17.5px); line-height:1.62; color:var(--muted);
+  opacity:0; animation:fadeIn .8s ease .55s forwards;
+}
+.hero-cta{ display:flex; gap:12px; flex-wrap:wrap; margin-top:26px; opacity:0; animation:fadeIn .8s ease .72s forwards; }
+@keyframes fadeIn{ to{ opacity:1; } }
+
+.hero-search{ margin-top:26px; max-width:520px; opacity:0; animation:fadeIn .8s ease .85s forwards; }
+
+/* rotating "on air" panel */
+.onair{
+  position:relative; border-radius:var(--r-lg); overflow:hidden; aspect-ratio:3/4;
+  border:1px solid var(--line-hot); background:var(--panel);
+  box-shadow:0 40px 90px -40px #000, 0 0 70px -45px var(--accent);
+  opacity:0; animation:fadeIn 1s ease .6s forwards;
+}
+.onair-stack{ position:absolute; inset:0; z-index:0; }
+.onair img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .9s ease, transform 7s linear; }
+.onair img.on{ opacity:1; transform:scale(1.08); }
+.onair::after{ content:''; position:absolute; inset:0; background:linear-gradient(to top,var(--ink) 3%,rgba(7,6,14,.35) 45%,transparent 72%); }
+.onair-body{ position:absolute; left:0; right:0; bottom:0; padding:22px; z-index:2; }
+.onair .flag{
+  display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; color:var(--accent);
+  background:rgba(7,6,14,.6); border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);
+  padding:5px 11px; border-radius:999px; margin-bottom:12px; backdrop-filter:blur(8px);
+}
+.onair .flag i{ width:6px; height:6px; border-radius:50%; background:var(--accent); animation:pulse 1.5s infinite; }
+@keyframes pulse{ 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:.3; transform:scale(.7);} }
+.onair h3{ font-size:clamp(20px,2.6vw,28px); line-height:1.05; color:#fff; }
+.onair .cd{ font-family:'Chakra Petch',monospace; font-size:16px; font-weight:700; color:var(--accent); margin-top:9px; }
+.onair-dots{ position:absolute; top:16px; right:16px; z-index:3; display:flex; gap:5px; }
+.onair-dots i{ width:16px; height:3px; border-radius:2px; background:rgba(255,255,255,.25); transition:background .3s; }
+.onair-dots i.on{ background:var(--accent); }
+
+@media (max-width:900px){
+  .hero-inner{ grid-template-columns:1fr; gap:30px; }
+  .onair{ aspect-ratio:16/10; order:-1; }
+  .hero-jp{ display:none; }
+}
+
+/* ---------- stat strip ---------- */
+.stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1px; background:var(--line);
+  border:1px solid var(--line); border-radius:var(--r); overflow:hidden; margin-top:44px; }
+.stats div{ background:var(--ink-2); padding:18px 20px; }
+.stats .n{ font-family:'Chakra Petch',monospace; font-size:26px; font-weight:700; color:var(--paper); line-height:1; }
+.stats .l{ font-size:12.5px; color:var(--muted); margin-top:6px; }
+
+/* ---------- feature tiles ---------- */
+.tiles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.tile{
+  position:relative; padding:26px 24px 28px; border-radius:var(--r); text-decoration:none; overflow:hidden;
+  background:var(--panel); border:1px solid var(--line); transition:transform .4s var(--ease), border-color .4s, box-shadow .4s;
+}
+.tile:hover{ transform:translateY(-6px); border-color:color-mix(in srgb,var(--accent) 45%,transparent);
+  box-shadow:0 26px 60px -28px #000, 0 0 40px -22px var(--accent); }
+.tile .ic{ font-size:22px; margin-bottom:14px; display:block; }
+.tile h3{ font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:var(--paper); }
+.tile p{ font-size:13.5px; color:var(--muted); margin-top:7px; line-height:1.6; }
+.tile .go{ margin-top:14px; font-size:13px; font-weight:600; color:var(--accent); display:inline-block; transition:transform .3s; }
+.tile:hover .go{ transform:translateX(5px); }
+.tile::after{ content:''; position:absolute; right:-40px; top:-40px; width:120px; height:120px; border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 20%,transparent),transparent 70%); opacity:0; transition:opacity .4s; }
+.tile:hover::after{ opacity:1; }
+
+.sec{ padding:56px 0 0; }
+</style>
+</head>
+<body data-intro>
+
+<canvas id="particles"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<nav>
+  <a href="index.html" class="nav-logo"><span class="mark"></span>ANIME WORLD</a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html" class="current">Home</a></li>
+    <li><a href="browse.html">Browse</a></li>
+    <li><a href="find.html">Find</a></li>
+    <li><a href="schedule.html">Schedule</a></li>
+    <li><a href="quotes.html">Quotes</a></li>
+    <li><a href="guide.html">Guide</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="sound-toggle" aria-label="Turn sound on">🔈</button>
+    <span id="navAuth"></span>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="wrap hero-inner">
+    <div>
+      <div class="hero-mark">
+        <div class="hero-jp px" data-depth="1.4">アニメ・ワールド</div>
+        <h1>
+          <span class="l"><i>ANIME</i></span>
+          <span class="l"><i>WORLD</i></span>
+        </h1>
+      </div>
+      <p class="lede">Every series, every season. Live countdowns to the next episode, the legal places each show streams, and a list that remembers what you're watching.</p>
+
+      <div class="hero-search suggest-wrap">
+        <div class="searchbar">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="heroSearch" type="search" placeholder="Search any anime…" autocomplete="off" aria-label="Search anime">
+          <span class="spin"></span>
+          <button class="clear" aria-label="Clear">✕</button>
+          <a href="find.html" class="cam" title="Find by screenshot, clip or song" aria-label="Find by screenshot, clip or song"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg></a>
+        </div>
+        <div class="suggest" id="heroSuggest"></div>
+      </div>
+
+      <div class="hero-cta">
+        <a href="browse.html" class="btn">Browse the catalogue</a>
+        <a href="schedule.html" class="btn btn-outline">What airs today</a>
+        <button class="btn btn-ghost" onclick="surpriseMe()" title="Press R anywhere">🎲 Surprise me</button>
+      </div>
+    </div>
+
+    <div class="onair px" data-depth="-0.6" id="onair">
+      <div class="onair-stack" id="onairStack"></div>
+      <div class="onair-dots" id="onairDots"></div>
+      <div class="onair-body">
+        <span class="flag"><i></i> On air now</span>
+        <h3 id="onairTitle">Loading…</h3>
+        <div class="cd hud" id="onairCd">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="stats rv">
+      <div><div class="n hud" id="statTitles">—</div><div class="l">Titles searchable</div></div>
+      <div><div class="n hud" id="statAiring">—</div><div class="l">Currently airing</div></div>
+      <div><div class="n hud">74</div><div class="l">Quotes in the wall</div></div>
+      <div><div class="n hud">Live</div><div class="l">Episode countdowns</div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ============ TRENDING ============ -->
+  <section class="sec wrap">
+    <div class="row-head rv">
+      <h2>Trending this week</h2>
+      <a href="browse.html?sort=TRENDING_DESC" class="side">See all →</a>
+    </div>
+    <div class="rail" id="railTrending">
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ AIRING ============ -->
+  <section class="sec wrap">
+    <div class="row-head rv">
+      <h2>Next episodes</h2>
+      <a href="schedule.html" class="side">Full schedule →</a>
+    </div>
+    <div class="rail" id="railAiring">
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ QUOTE ============ -->
+  <section class="sec wrap">
+    <div class="quote-hero rv">
+      <div class="qtext" id="homeQuote"></div>
+      <div class="qwho" id="homeQuoteWho"></div>
+      <div style="margin-top:24px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-sm" id="quoteShuffle">Another one</button>
+        <a href="quotes.html" class="btn btn-outline btn-sm">All 74 quotes</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TILES ============ -->
+  <section class="sec wrap" style="padding-bottom:20px;">
+    <div class="row-head rv"><h2>Everything else</h2></div>
+    <div class="tiles">
+      <a href="browse.html" class="tile rv">
+        <span class="ic">🗂️</span><h3>Browse</h3>
+        <p>Filter by genre, format, year and status. Search actually works — type and results follow.</p>
+        <span class="go">Open browse →</span>
+      </a>
+      <a href="schedule.html" class="tile rv">
+        <span class="ic">⏱️</span><h3>Schedule</h3>
+        <p>Live countdowns to every next episode, grouped by the day they drop.</p>
+        <span class="go">See countdowns →</span>
+      </a>
+      <a href="guide.html" class="tile rv">
+        <span class="ic">🧭</span><h3>Watch guide</h3>
+        <p>Where each series legally streams, plus watch orders for the franchises that need one.</p>
+        <span class="go">Read the guide →</span>
+      </a>
+      <a href="account.html" class="tile rv">
+        <span class="ic">♥</span><h3>My list</h3>
+        <p>Save anything you want to come back to. Works the moment you make an account.</p>
+        <span class="go">Open my list →</span>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a href="index.html" class="nav-logo"><span class="mark"></span>ANIME WORLD</a>
+        <p>A search, schedule and watch guide for anime. Data comes live from AniList, so nothing here goes stale.</p>
+      </div>
+      <div class="foot-col"><h4>Explore</h4>
+        <a href="browse.html">Browse</a><a href="schedule.html">Schedule</a><a href="quotes.html">Quotes</a><a href="guide.html">Guide</a>
+      </div>
+      <div class="foot-col"><h4>Account</h4>
+        <a href="account.html">Log in</a><a href="account.html">My list</a>
+      </div>
+      <div class="foot-col"><h4>Sources</h4>
+        <a href="https://anilist.co" target="_blank" rel="noopener">AniList</a>
+        <a href="https://myanimelist.net" target="_blank" rel="noopener">MyAnimeList</a>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <p>© 2026 Anime World · Built by <span style="color:var(--accent);font-weight:600">Tawsikul Islam</span></p>
+      <p>Catalogue data by AniList · Artwork belongs to its rights holders</p>
+    </div>
+  </div>
+</footer>
+
+<div id="toasts"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="site-config.js"></script>
+<script src="firebase-config.js"></script>
+<script src="shared.js"></script>
+<script src="stage.js"></script>
+<script src="quotes.js"></script>
+<script>
+/* ---------- hero search ---------- */
+makeSearch({
+  input: document.getElementById('heroSearch'),
+  channel: 'hero',
+  onEnter(q){ if(q) location.href = 'browse.html?q=' + encodeURIComponent(q); }
+});
+
+/* ---------- rails ---------- */
+async function fillRail(el, query, vars, opts){
+  try{
+    const d = await gql(query, vars, el.id);
+    const list = stash(d.Page.media).filter(m => m.coverImage?.large);
+    if(!list.length){ el.innerHTML = '<p class="empty">Nothing to show right now.</p>'; return; }
+    el.innerHTML = list.map(m => cardHTML(m, opts)).join('');
+    armFallbacks(el); reveal(el); paintFavs(el); tickCountdowns();
+  }catch(e){
+    if(isStale(e)) return;
+    el.innerHTML = '<p class="empty"><strong>Couldn\u2019t reach the catalogue</strong>Check your connection and reload.</p>';
+  }
+}
+
+fillRail(document.getElementById('railTrending'),
+  `query{ Page(page:1,perPage:16){ media(type:ANIME, sort:TRENDING_DESC, isAdult:false){ ${MEDIA_FIELDS} } } }`, {}, {});
+
+fillRail(document.getElementById('railAiring'),
+  `query{ Page(page:1,perPage:16){ media(type:ANIME, status:RELEASING, sort:POPULARITY_DESC, isAdult:false){ ${MEDIA_FIELDS} } } }`,
+  {}, { countdown:true });
+
+/* ---------- rotating on-air panel ---------- */
+(async function onAir(){
+  const box = document.getElementById('onair');
+  const dots = document.getElementById('onairDots');
+  try{
+    const d = await gql(
+      `query{ Page(page:1,perPage:5){ media(type:ANIME, status:RELEASING, sort:TRENDING_DESC, isAdult:false){ ${MEDIA_FIELDS} } } }`,
+      {}, 'onair');
+    const list = stash(d.Page.media).filter(m => m.nextAiringEpisode);
+    if(!list.length) return;
+
+    const stack = document.getElementById('onairStack');
+    list.forEach((m,i) => {
+      const img = document.createElement('img');
+      img.src = m.bannerImage || m.coverImage.extraLarge || m.coverImage.large;
+      img.alt = ''; img.loading = i ? 'lazy' : 'eager';
+      img.dataset.fb = titleOf(m);
+      stack.appendChild(img);                 // append, so DOM order matches list order
+      dots.insertAdjacentHTML('beforeend', `<i></i>`);
+    });
+    armFallbacks(box);
+
+    let i = 0;
+    const imgs = [...stack.querySelectorAll('img')];
+    function show(n){
+      i = n;
+      imgs.forEach((im,k) => im.classList.toggle('on', k===n));
+      [...dots.children].forEach((c,k) => c.classList.toggle('on', k===n));
+      const m = list[n];
+      document.getElementById('onairTitle').textContent = titleOf(m);
+      const cd = document.getElementById('onairCd');
+      cd.dataset.at = m.nextAiringEpisode.airingAt;
+      cd.dataset.ep = m.nextAiringEpisode.episode;
+      box.onclick = () => openSheet(m.id);
+      box.style.cursor = 'pointer';
+      tickCountdowns();
+    }
+    show(0);
+    setInterval(() => show((i+1) % list.length), 6000);
+  }catch(e){
+    if(!isStale(e)) document.getElementById('onairTitle').textContent = 'Schedule unavailable';
+  }
+})();
+
+/* ---------- stats ---------- */
+(async function stats(){
+  try{
+    const d = await gql(`query{
+      all: Page(perPage:1){ pageInfo{ total } media(type:ANIME, isAdult:false){ id } }
+      airing: Page(perPage:1){ pageInfo{ total } media(type:ANIME, status:RELEASING, isAdult:false){ id } }
+    }`, {}, 'stats');
+    countUp(document.getElementById('statTitles'), d.all.pageInfo.total);
+    countUp(document.getElementById('statAiring'), d.airing.pageInfo.total);
+  }catch(e){
+    document.getElementById('statTitles').textContent = '20k+';
+    document.getElementById('statAiring').textContent = '—';
+  }
+})();
+function countUp(el, target){
+  if(REDUCED){ el.textContent = target.toLocaleString(); return; }
+  const t0 = performance.now(), dur = 1400;
+  (function step(now){
+    const p = Math.min(1, (now-t0)/dur), e = 1 - Math.pow(1-p, 3);
+    el.textContent = Math.round(target*e).toLocaleString();
+    if(p < 1) requestAnimationFrame(step);
+  })(performance.now());
+}
+
+/* ---------- quote of the moment, typed out ---------- */
+let typeTimer;
+function showQuote(){
+  const q = QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  const el = document.getElementById('homeQuote');
+  const who = document.getElementById('homeQuoteWho');
+  who.style.opacity = '0';
+  clearTimeout(typeTimer);
+  const text = '“' + q.q + '”';
+  if(REDUCED){ el.textContent = text; who.innerHTML = `${esc(q.who)} <span>— ${esc(q.from)}</span>`; who.style.opacity='1'; return; }
+  let i = 0;
+  el.innerHTML = '<span class="caret"></span>';
+  (function type(){
+    i++;
+    el.innerHTML = esc(text.slice(0,i)) + '<span class="caret"></span>';
+    if(i < text.length) typeTimer = setTimeout(type, 26);
+    else{
+      el.innerHTML = esc(text);
+      who.innerHTML = `${esc(q.who)} <span>— ${esc(q.from)}</span>`;
+      who.style.transition = 'opacity .5s'; who.style.opacity = '1';
+    }
+  })();
+}
+document.getElementById('quoteShuffle').addEventListener('click', () => { showQuote(); Sfx.play('tick'); });
+showQuote();
+</script>
+</body>
+</html>

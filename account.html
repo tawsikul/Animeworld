@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060812">
+<title>My list — Anime World</title>
+<meta name="description" content="Log in and keep a list of everything you're watching.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Anime World">
+<meta property="og:image" content="icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta property="og:title" content="My list — Anime World">
+<meta property="og:description" content="Log in and keep a list of everything you're watching.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Chakra+Petch:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&family=Zen+Dots&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.mode-note{ max-width:400px; margin:18px auto 0; font-size:12.5px; color:var(--muted-2); text-align:center; line-height:1.6; }
+.mode-note b{ color:var(--muted); font-weight:600; }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<nav>
+  <a href="index.html" class="nav-logo"><span class="mark"></span>ANIME WORLD</a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="browse.html">Browse</a></li>
+    <li><a href="find.html">Find</a></li>
+    <li><a href="schedule.html">Schedule</a></li>
+    <li><a href="quotes.html">Quotes</a></li>
+    <li><a href="guide.html">Guide</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="sound-toggle" aria-label="Turn sound on">🔈</button>
+    <span id="navAuth"></span>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============ LOGGED OUT ============ -->
+  <section id="loggedOut" style="display:none;">
+    <header class="page-head" style="text-align:center; padding-bottom:32px;">
+      <span class="kicker" style="justify-content:center;">Your account</span>
+      <h1>Keep a <em>list</em></h1>
+      <p class="sub" style="margin-left:auto;margin-right:auto;">Save anything you want to come back to. It stays with your account.</p>
+    </header>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab on" data-tab="login" type="button">Log in</button>
+        <button class="auth-tab" data-tab="signup" type="button">Sign up</button>
+      </div>
+
+      <form id="formLogin" novalidate>
+        <div class="field" id="fLoginEmail">
+          <label for="loginEmail">Email</label>
+          <input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+          <div class="err"></div>
+        </div>
+        <div class="field" id="fLoginPw">
+          <label for="loginPw">Password</label>
+          <input id="loginPw" type="password" autocomplete="current-password" placeholder="••••••••" required>
+          <div class="err"></div>
+        </div>
+        <button class="btn" style="width:100%;" type="submit" id="btnLogin">Log in</button>
+        <div class="auth-alt">No account yet? <button type="button" data-goto="signup">Create one</button></div>
+      </form>
+
+      <form id="formSignup" style="display:none;" novalidate>
+        <div class="field" id="fSignName">
+          <label for="signName">Display name</label>
+          <input id="signName" type="text" autocomplete="nickname" placeholder="What should we call you?">
+          <div class="err"></div>
+        </div>
+        <div class="field" id="fSignEmail">
+          <label for="signEmail">Email</label>
+          <input id="signEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+          <div class="err"></div>
+        </div>
+        <div class="field" id="fSignPw">
+          <label for="signPw">Password</label>
+          <input id="signPw" type="password" autocomplete="new-password" placeholder="At least 6 characters" required>
+          <div class="hint">Six characters or more.</div>
+          <div class="err"></div>
+        </div>
+        <button class="btn" style="width:100%;" type="submit" id="btnSignup">Create account</button>
+        <div class="auth-alt">Already have one? <button type="button" data-goto="login">Log in</button></div>
+      </form>
+    </div>
+
+    <p class="mode-note" id="modeNote"></p>
+  </section>
+
+  <!-- ============ LOGGED IN ============ -->
+  <section id="loggedIn" style="display:none;">
+    <div style="padding-top:calc(var(--nav-h) + 48px);"></div>
+    <div class="profile-head">
+      <div class="profile-av" id="avatar">?</div>
+      <div class="who">
+        <h2 id="who">—</h2>
+        <p id="whoSub"></p>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btnLogout" style="margin-left:auto;">Log out</button>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="n" id="sCount">0</div><div class="l">In your list</div></div>
+      <div class="stat"><div class="n" id="sWatching">0</div><div class="l">Watching</div></div>
+      <div class="stat"><div class="n" id="sDone">0</div><div class="l">Completed</div></div>
+      <div class="stat"><div class="n" id="sEps">0</div><div class="l">Episodes watched</div></div>
+    </div>
+
+    <div class="row-head"><h2>My list</h2><a href="browse.html" class="side">Find more →</a></div>
+    <div class="chips list-tabs" id="listTabs">
+      <button class="chip on" data-st="all">All</button>
+      <button class="chip" data-st="watching">Watching</button>
+      <button class="chip" data-st="planning">Plan to watch</button>
+      <button class="chip" data-st="completed">Completed</button>
+    </div>
+    <div class="grid" id="favGrid"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-bot">
+      <p>© 2026 Anime World · Built by <span style="color:var(--accent);font-weight:600">Tawsikul Islam</span></p>
+      <p id="footMode"></p>
+    </div>
+  </div>
+</footer>
+
+<div id="toasts"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="site-config.js"></script>
+<script src="firebase-config.js"></script>
+<script src="shared.js"></script>
+<script src="stage.js"></script>
+<script>
+/* ==========================================================
+   ACCOUNT
+   The previous build only worked once Firebase keys were pasted
+   in; with the placeholder keys it rendered nothing and the
+   forms silently did nothing at all. Now accounts work straight
+   away on the device, and upgrade to synced Firebase accounts
+   the moment real keys are present in firebase-config.js.
+   ========================================================== */
+
+/* ---------- tabs ---------- */
+function tab(which){
+  document.querySelectorAll('.auth-tab').forEach(b => b.classList.toggle('on', b.dataset.tab === which));
+  document.getElementById('formLogin').style.display  = which === 'login'  ? 'block' : 'none';
+  document.getElementById('formSignup').style.display = which === 'signup' ? 'block' : 'none';
+  clearErrors();
+}
+document.querySelectorAll('.auth-tab').forEach(b => b.addEventListener('click', () => { tab(b.dataset.tab); Sfx.play('tick'); }));
+document.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => tab(b.dataset.goto)));
+
+function clearErrors(){ document.querySelectorAll('.field').forEach(f => f.classList.remove('bad')); }
+function fieldError(id, msg){
+  const f = document.getElementById(id);
+  f.classList.add('bad');
+  f.querySelector('.err').textContent = msg;
+  f.querySelector('input')?.focus();
+}
+
+/* ---------- log in ---------- */
+document.getElementById('formLogin').addEventListener('submit', async e => {
+  e.preventDefault();
+  clearErrors();
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPw').value;
+  if(!email) return fieldError('fLoginEmail', 'Enter your email address.');
+  if(!pw)    return fieldError('fLoginPw', 'Enter your password.');
+
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true; btn.textContent = 'Logging in…';
+  try{
+    await Auth.login(email, pw);
+    toast('Welcome back');
+    Sfx.play('save');
+    const next = new URLSearchParams(location.search).get('next');
+    if(next) setTimeout(() => location.href = next, 700);
+  }catch(err){
+    const msg = friendly(err);
+    fieldError(/password|credential/i.test(msg) ? 'fLoginPw' : 'fLoginEmail', msg);
+  }finally{ btn.disabled = false; btn.textContent = 'Log in'; }
+});
+
+/* ---------- sign up ---------- */
+document.getElementById('formSignup').addEventListener('submit', async e => {
+  e.preventDefault();
+  clearErrors();
+  const name = document.getElementById('signName').value.trim();
+  const email = document.getElementById('signEmail').value.trim();
+  const pw = document.getElementById('signPw').value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) return fieldError('fSignEmail', 'That doesn’t look like a valid email.');
+  if(pw.length < 6) return fieldError('fSignPw', 'Use at least 6 characters.');
+
+  const btn = document.getElementById('btnSignup');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try{
+    await Auth.signup(email, pw, name);
+    toast('Account created');
+    Sfx.play('save');
+    const next = new URLSearchParams(location.search).get('next');
+    if(next) setTimeout(() => location.href = next, 700);
+  }catch(err){
+    const msg = friendly(err);
+    fieldError(/password/i.test(msg) ? 'fSignPw' : 'fSignEmail', msg);
+  }finally{ btn.disabled = false; btn.textContent = 'Create account'; }
+});
+
+function friendly(err){
+  const code = err?.code || '';
+  if(code.includes('email-already-in-use')) return 'That email already has an account. Log in instead.';
+  if(code.includes('invalid-email'))        return 'That doesn’t look like a valid email.';
+  if(code.includes('weak-password'))        return 'Use at least 6 characters.';
+  if(code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential'))
+    return 'Email or password is incorrect.';
+  if(code.includes('too-many-requests'))    return 'Too many attempts. Wait a minute and try again.';
+  if(code.includes('network'))              return 'No connection. Check your network.';
+  return err?.message || 'Something went wrong. Try again.';
+}
+
+document.getElementById('btnLogout').addEventListener('click', async () => {
+  await Auth.logout();
+  toast('Logged out');
+});
+
+/* ---------- render ---------- */
+Auth.onChange(async user => {
+  const note = Auth.mode === 'firebase'
+    ? 'Your account is synced, so your list follows you to any device you log in on.'
+    : 'Your account lives on this device. To sync across devices, add Firebase keys to firebase-config.js — the site switches over automatically.';
+  document.getElementById('modeNote').innerHTML = '<b>' +
+    (Auth.mode === 'firebase' ? 'Synced accounts are on.' : 'Running in on-device mode.') + '</b> ' + esc(note);
+  document.getElementById('footMode').textContent =
+    Auth.mode === 'firebase' ? 'Accounts synced via Firebase' : 'Accounts stored on this device';
+
+  document.getElementById('loggedOut').style.display = user ? 'none' : 'block';
+  document.getElementById('loggedIn').style.display  = user ? 'block' : 'none';
+  if(!user) return;
+
+  const label = user.name || user.email.split('@')[0];
+  document.getElementById('avatar').textContent = label[0].toUpperCase();
+  document.getElementById('who').textContent = label;
+  document.getElementById('whoSub').textContent = user.email;
+  await renderList();
+});
+
+let listFilter = 'all', listCache = [];
+document.getElementById('listTabs').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if(!c) return;
+  listFilter = c.dataset.st;
+  [...c.parentElement.children].forEach(x => x.classList.toggle('on', x === c));
+  Sfx.play('tick');
+  paintGrid();
+});
+
+async function renderList(){
+  const grid = document.getElementById('favGrid');
+  grid.innerHTML = Array.from({length:4},
+    () => '<div class="sk"><div class="sk-img"></div><div class="sk-line"></div></div>').join('');
+
+  const items = await Auth.listItems();
+
+  /* re-fetch live details so status, scores and countdowns stay current */
+  let full = [];
+  if(items.length){
+    try{
+      const d = await gql(
+        `query($ids:[Int]){ Page(page:1,perPage:50){ media(id_in:$ids, type:ANIME){ ${MEDIA_FIELDS} } } }`,
+        { ids: items.map(f => Number(f.id)) }, 'favs');
+      full = stash(d.Page.media);
+    }catch(e){ /* fall back to the saved snapshot below */ }
+  }
+  const byId = new Map(full.map(m => [String(m.id), m]));
+  listCache = items.map(f => ({
+    status: f.status || 'planning',
+    media: byId.get(String(f.id)) || {
+      id: f.id, title:{ english:f.title }, coverImage:{ large:f.cover }, format:f.format,
+      seasonYear:f.year, averageScore:f.score, episodes:f.episodes
+    }
+  }));
+
+  const n = st => listCache.filter(x => x.status === st).length;
+  document.getElementById('sCount').textContent = listCache.length;
+  document.getElementById('sWatching').textContent = n('watching');
+  document.getElementById('sDone').textContent = n('completed');
+  document.getElementById('sEps').textContent =
+    listCache.filter(x => x.status === 'completed').reduce((s,x) => s + (x.media.episodes || 0), 0);
+  [...document.getElementById('listTabs').children].forEach(c => {
+    const st = c.dataset.st; const k = st === 'all' ? listCache.length : n(st);
+    c.textContent = c.textContent.replace(/\s·\s\d+$/, '') + (k ? ' · ' + k : '');
+  });
+  paintGrid();
+}
+
+function paintGrid(){
+  const grid = document.getElementById('favGrid');
+  const rows = listCache.filter(x => listFilter === 'all' || x.status === listFilter);
+  if(!rows.length){
+    grid.innerHTML = listCache.length
+      ? `<div class="empty"><strong>Nothing in ${STATUS_LABEL[listFilter] || 'this tab'}</strong>Open any title and pick a status.</div>`
+      : `<div class="empty"><strong>Nothing saved yet</strong>
+          Tap the heart on any card, or open a title and pick Watching, Plan to watch or Completed.
+          <div><a class="btn btn-sm" href="browse.html">Browse anime</a></div></div>`;
+    return;
+  }
+  grid.innerHTML = rows.map(x =>
+    cardHTML(x.media, { countdown: x.status === 'watching', extra: STATUS_LABEL[x.status] })).join('');
+  armFallbacks(grid); reveal(grid); paintList(grid); tickCountdowns();
+}
+
+document.addEventListener('listchange', () => { if(Auth.user) renderList(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060812">
+<title>Watch guide — Anime World</title>
+<meta name="description" content="Where each anime legally streams, watch orders for franchises that need one, and starting points if you are new.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Anime World">
+<meta property="og:image" content="icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta property="og:title" content="Watch guide — Anime World">
+<meta property="og:description" content="Where each anime legally streams, watch orders for franchises that need one, and starting points if you are new.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Chakra+Petch:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&family=Zen+Dots&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.lookup-box{
+  padding:clamp(20px,3.4vw,30px); border-radius:var(--r-lg);
+  background:linear-gradient(140deg,var(--panel-2),var(--ink-2)); border:1px solid var(--line-hot);
+}
+.lookup-box h2{ font-size:clamp(20px,3vw,28px); margin-bottom:8px; }
+.lookup-box p.h{ font-size:14px; color:var(--muted); margin-bottom:18px; max-width:60ch; line-height:1.6; }
+.lookup-result{ margin-top:20px; display:none; }
+.lookup-result.on{ display:block; animation:fadeUp .4s var(--ease); }
+.lr-head{ display:flex; gap:16px; align-items:flex-start; margin-bottom:16px; }
+.lr-head img{ width:74px; aspect-ratio:2/3; object-fit:cover; border-radius:9px; flex:none; }
+.lr-head h3{ font-size:20px; line-height:1.1; }
+.lr-head .m{ font-size:13px; color:var(--muted); margin-top:5px; }
+.tabs{ display:flex; gap:8px; margin:32px 0 22px; flex-wrap:wrap; }
+.sec{ padding:50px 0 0; }
+.starter{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; }
+.st{
+  padding:20px; border-radius:var(--r); background:var(--panel); border:1px solid var(--line);
+  transition:transform .35s var(--ease), border-color .35s;
+}
+.st:hover{ transform:translateY(-4px); border-color:color-mix(in srgb,var(--accent) 40%,transparent); }
+.st h4{ font-family:'Outfit',sans-serif; font-weight:600; font-size:15px; color:var(--paper); margin-bottom:5px; }
+.st p{ font-size:13px; color:var(--muted); line-height:1.55; margin-bottom:12px; }
+.st .picks{ display:flex; flex-direction:column; gap:6px; }
+.st .picks button{
+  text-align:left; background:none; border:none; color:var(--accent); font-family:'Outfit',sans-serif;
+  font-size:13px; font-weight:600; cursor:pointer; padding:5px 0; border-top:1px solid var(--line); transition:padding-left .25s;
+}
+.st .picks button:hover{ padding-left:6px; }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<nav>
+  <a href="index.html" class="nav-logo"><span class="mark"></span>ANIME WORLD</a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="browse.html">Browse</a></li>
+    <li><a href="find.html">Find</a></li>
+    <li><a href="schedule.html">Schedule</a></li>
+    <li><a href="quotes.html">Quotes</a></li>
+    <li><a href="guide.html" class="current">Guide</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="sound-toggle" aria-label="Turn sound on">🔈</button>
+    <span id="navAuth"></span>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<header class="page-head wrap">
+  <span class="kicker">Watch guide</span>
+  <h1>Where to watch, <em>and in what order</em></h1>
+  <p class="sub">Look up any title to see the platforms currently licensed to stream it, then check whether the franchise has an order worth following.</p>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ LIVE LOOKUP ============ -->
+  <section class="lookup-box rv">
+    <h2>Find where a show streams</h2>
+    <p class="h">Streaming rights move around constantly, so this checks the live database rather than a list someone typed once. Results are the platforms officially licensed in the catalogue.</p>
+    <div class="suggest-wrap">
+      <div class="searchbar">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Type a title, e.g. Frieren…" autocomplete="off" aria-label="Look up where an anime streams">
+        <span class="spin"></span>
+        <button class="clear" aria-label="Clear">✕</button>
+      </div>
+      <div class="suggest" id="qSuggest"></div>
+    </div>
+
+    <div class="lookup-result" id="lr">
+      <div class="lr-head">
+        <img id="lrImg" alt="" data-fb="Anime">
+        <div>
+          <h3 id="lrTitle"></h3>
+          <div class="m" id="lrMeta"></div>
+        </div>
+      </div>
+      <div class="where">
+        <h4>Officially streaming on</h4>
+        <div class="where-links" id="lrWhere"></div>
+      </div>
+      <div class="sheet-actions" style="margin-top:18px;">
+        <a class="btn btn-sm" id="lrOpen" href="#">Open full details</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FREE + LICENSED ============ -->
+  <section class="sec">
+    <div class="row-head rv">
+      <h2>Free and licensed</h2>
+      <span class="side">Ad-supported, no subscription, studios get paid</span>
+    </div>
+    <div class="guide-grid" id="freePlatforms"></div>
+    <div class="note rv" style="margin-top:16px;">
+      <b>These look like the free sites but aren’t.</b> They pay for licences with ads instead of subscriptions, so they don’t get taken down and don’t carry malware. The trade-off is region: most are US-only, the YouTube channels are Asia-focused. The lookup at the top tells you what’s actually available to you.
+    </div>
+  </section>
+
+  <!-- ============ PAID ============ -->
+  <section class="sec">
+    <div class="row-head rv"><h2>Paid services</h2></div>
+    <div class="guide-grid" id="platforms"></div>
+    <div class="note rv" style="margin-top:16px;">
+      <b>Availability depends on your country.</b> A show licensed in one region often isn’t in another, and licences expire. The lookup above reads the live catalogue, which is the most reliable check.
+    </div>
+  </section>
+
+  <!-- ============ WATCH ORDERS ============ -->
+  <section class="sec">
+    <div class="row-head rv">
+      <h2>Watch orders</h2>
+      <span class="side">Franchises where the order actually matters</span>
+    </div>
+    <div class="chips" id="orderChips" style="margin-bottom:18px;"></div>
+    <div id="orders"></div>
+  </section>
+
+  <!-- ============ STARTING POINTS ============ -->
+  <section class="sec" style="padding-bottom:20px;">
+    <div class="row-head rv"><h2>Never watched anime? Start here</h2></div>
+    <div class="starter" id="starters"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-bot">
+      <p>© 2026 Anime World · Built by <span style="color:var(--accent);font-weight:600">Tawsikul Islam</span></p>
+      <p>Streaming data read live from AniList</p>
+    </div>
+  </div>
+</footer>
+
+<div id="toasts"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="site-config.js"></script>
+<script src="firebase-config.js"></script>
+<script src="shared.js"></script>
+<script src="stage.js"></script>
+<script>
+/* ==========================================================
+   1. PLATFORMS
+   ========================================================== */
+const FREE = [
+  { n:'Tubi', c:'#FA382F', i:'T', d:'The biggest free, licensed anime library. No account needed, ads between episodes, a lot of the big shonen with dubs.', t:'US, plus Canada, Mexico and Australia', u:'https://tubitv.com' },
+  { n:'Pluto TV', c:'#FFD400', i:'P', d:'Free 24/7 anime channels running like cable, plus an on-demand catalogue. Includes the Crunchyroll Channel.', t:'US, UK, Europe, Latin America', u:'https://pluto.tv' },
+  { n:'RetroCrush', c:'#8B5CF6', i:'R', d:'Classic anime from the 70s, 80s and 90s, free with ads. Things the big services never picked up.', t:'US and Canada', u:'https://www.retrocrush.tv' },
+  { n:'Peacock (free tier)', c:'#00A7E1', i:'Pk', d:'A handful of major shonen titles sit on the free plan with ads.', t:'US only', u:'https://www.peacocktv.com' },
+  { n:'Muse Asia', c:'#22E1FF', i:'M', d:'Licensed full episodes on YouTube with English subtitles, simulcast within hours of Japan. Fully legal, no account.', t:'South and Southeast Asia', u:'https://www.youtube.com/@MuseAsia' },
+  { n:'Ani-One Asia', c:'#FF3B54', i:'A1', d:'Medialink\u2019s YouTube channel — the other big licensed simulcast channel for the region.', t:'Asia', u:'https://www.youtube.com/@AniOneAsia' },
+  { n:'Official YouTube channels', c:'#FF0000', i:'YT', d:'VIZ Media, Toei Animation and Crunchyroll post free licensed episodes of their own titles. Which ones depends on where you are.', t:'Region-dependent', u:'https://www.youtube.com/@VIZMedia' },
+  { n:'Bilibili', c:'#00A1D6', i:'B', d:'Licensed simulcasts and back catalogue across Southeast Asia, free with ads.', t:'Southeast Asia', u:'https://www.bilibili.tv' },
+  { n:'Roku Channel · Plex · Samsung TV Plus', c:'#6C8CFF', i:'\u25B6', d:'Free ad-supported channels on smart TVs and the web that carry licensed anime blocks, including the Crunchyroll Channel.', t:'Mostly US', u:'https://therokuchannel.roku.com' }
+];
+const PLATFORMS = [
+  { n:'Crunchyroll', c:'#F47521', i:'C', d:'The widest simulcast library — most of each season within an hour of Japan, subbed, with dubs following. The free tier ended at the start of 2026, so it is a paid subscription now.', t:'Paid · the biggest catalogue', u:'https://www.crunchyroll.com' },
+  { n:'Netflix', c:'#E50914', i:'N', d:'A smaller anime catalogue but strong on originals and exclusives. Tends to drop full seasons at once rather than weekly.', t:'Paid · good for binge-watching', u:'https://www.netflix.com' },
+  { n:'Hulu', c:'#1CE783', i:'H', d:'Carries a wide back catalogue in the US, including a lot of Crunchyroll-licensed shows.', t:'Paid · US only', u:'https://www.hulu.com' },
+  { n:'Prime Video', c:'#00A8E1', i:'P', d:'A mixed library, some included with Prime and some sold per season. Worth checking before buying elsewhere.', t:'Paid · check included vs bought', u:'https://www.primevideo.com' },
+  { n:'HIDIVE', c:'#00BCD4', i:'D', d:'Smaller and cheaper, focused on titles the bigger services skipped. Often the only legal home for certain shows.', t:'Paid · fills the gaps', u:'https://www.hidive.com' },
+  { n:'Disney+', c:'#0063E5', i:'D+', d:'Holds a handful of high-profile exclusives, varying a lot by region.', t:'Paid · region-dependent', u:'https://www.disneyplus.com' }
+];
+const platCard = p => `
+  <a class="plat rv" href="${p.u}" target="_blank" rel="noopener">
+    <span class="badge" style="background:${p.c}">${p.i}</span>
+    <div><h3>${esc(p.n)}</h3><p>${esc(p.d)}</p><div class="tagline">${esc(p.t)}</div></div>
+  </a>`;
+document.getElementById('freePlatforms').innerHTML = FREE.map(platCard).join('');
+document.getElementById('platforms').innerHTML = PLATFORMS.map(platCard).join('');
+
+/* ==========================================================
+   2. WATCH ORDERS
+   ========================================================== */
+const ORDERS = [
+  { id:'demon', name:'Demon Slayer', group:'Shonen', note:'Each film re-cuts or continues the TV run, so the order is simply chronological.',
+    steps:[
+      ['Kimetsu no Yaiba (Season 1)','Episodes 1–26. The whole foundation.'],
+      ['Mugen Train','Available as a film or as the season 2 arc. The TV version adds an extra episode; the film is the same story.'],
+      ['Entertainment District Arc','Season 2, second half.'],
+      ['Swordsmith Village Arc','Season 3.'],
+      ['Hashira Training Arc','Season 4. Short, and sets up the finale.'],
+      ['Infinity Castle films','The final act, released theatrically.']
+    ]},
+  { id:'aot', name:'Attack on Titan', group:'Shonen', note:'Watch in release order. The compilation films are optional recaps, not new material.',
+    steps:[
+      ['Season 1','Episodes 1–25.'],
+      ['Season 2','Episodes 26–37.'],
+      ['Season 3 Part 1 & 2','Episodes 38–59. Part 2 is the strongest stretch of the show.'],
+      ['The Final Season Part 1','Episodes 60–75.'],
+      ['The Final Season Part 2','Episodes 76–87.'],
+      ['The Final Chapters','Two feature-length specials that close it out.'],
+      ['Skip: Junior High','A non-canon comedy spin-off. Fun, but skip on a first watch.']
+    ]},
+  { id:'fma', name:'Fullmetal Alchemist', group:'Classic', note:'Two separate adaptations of the same manga. Pick one — do not alternate.',
+    steps:[
+      ['Fullmetal Alchemist: Brotherhood','The recommended path. Follows the manga to its ending, 64 episodes.'],
+      ['Fullmetal Alchemist (2003)','Diverges partway through into an original ending. Watch after Brotherhood if you want the alternate take.'],
+      ['Conqueror of Shamballa','The film ending to the 2003 series only.'],
+      ['The Sacred Star of Milos','A standalone side film set in the Brotherhood continuity.']
+    ]},
+  { id:'fate', name:'Fate series', group:'Complicated', note:'The single most asked-about order in anime. This route keeps the twists intact.',
+    steps:[
+      ['Fate/Zero','The prequel, and the cleanest entry point despite spoiling one small reveal.'],
+      ['Fate/stay night: Unlimited Blade Works','The 2014 ufotable version, not the 2006 series.'],
+      ['Heaven’s Feel (films I–III)','The third route, told as a film trilogy.'],
+      ['Fate/Grand Order & spin-offs','Optional. Watch only once the core routes make sense.'],
+      ['Skip on a first pass: Fate/Apocrypha, Extra','Separate continuities that assume you already know the setting.']
+    ]},
+  { id:'mono', name:'Monogatari', group:'Complicated', note:'Broadcast order and chronological order differ wildly. Broadcast order is how it was designed to unfold.',
+    steps:[
+      ['Bakemonogatari','Start here regardless of what any chronology chart says.'],
+      ['Nisemonogatari','Direct follow-up.'],
+      ['Nekomonogatari: Black','Short, and slots in here.'],
+      ['Monogatari Series: Second Season','The peak of the whole run.'],
+      ['Hanamonogatari, Tsukimonogatari, Owarimonogatari','Continue in release order.'],
+      ['Kizumonogatari (films)','Chronologically first, but far better as a flashback after Bakemonogatari.'],
+      ['Zoku Owarimonogatari','The closing chapter.']
+    ]},
+  { id:'eva', name:'Evangelion', group:'Classic', note:'Two versions of the same story, made decades apart.',
+    steps:[
+      ['Neon Genesis Evangelion','The 26-episode original series.'],
+      ['The End of Evangelion','The film ending. Watch it immediately after the series — it replaces the final two episodes.'],
+      ['Rebuild of Evangelion (4 films)','A separate retelling that starts familiar and diverges hard. Watch after the original.']
+    ]},
+  { id:'naruto', name:'Naruto', group:'Shonen', note:'Long, with substantial filler. This trims it without losing the plot.',
+    steps:[
+      ['Naruto','Episodes 1–220. Filler is heaviest from roughly episode 136 onward.'],
+      ['Naruto Shippuden','Episodes 1–500. The main story continues here.'],
+      ['The films','Standalone and skippable, except The Last, which leads directly into the next series.'],
+      ['Boruto: Naruto Next Generations','The sequel series, following the next generation.']
+    ]},
+  { id:'jjk', name:'Jujutsu Kaisen', group:'Shonen', note:'One prequel film sits between seasons but was released after season 1.',
+    steps:[
+      ['Jujutsu Kaisen Season 1','Episodes 1–24.'],
+      ['Jujutsu Kaisen 0','A prequel film. Watch after season 1 — it lands better with the context.'],
+      ['Season 2','Opens with a flashback arc, then continues the present-day story.'],
+      ['Season 3','Continues directly from season 2.']
+    ]},
+  { id:'geass', name:'Code Geass', group:'Classic', note:'Straightforward, with one branching sequel.',
+    steps:[
+      ['Code Geass: Lelouch of the Rebellion','Season 1, 25 episodes.'],
+      ['Code Geass: R2','Season 2, and the ending most people mean when they talk about this show.'],
+      ['The recap film trilogy','Condenses both seasons with changes, and leads into the sequel film.'],
+      ['Lelouch of the Re;surrection','Follows the film trilogy continuity, not the TV ending.']
+    ]},
+  { id:'clannad', name:'Clannad', group:'Classic', note:'Short and non-negotiable — the second series is the reason people recommend the first.',
+    steps:[
+      ['Clannad','Season 1.'],
+      ['Clannad: After Story','Season 2. Do not stop before this.'],
+      ['The OVAs','Alternate-route side stories. Optional.']
+    ]},
+  { id:'onepiece', name:'One Piece', group:'Shonen', note:'Over a thousand episodes. You do not need to watch all of them.',
+    steps:[
+      ['Start at episode 1','The early arcs are short and set up everything that follows.'],
+      ['Skip the filler arcs','Roughly 10% of episodes are anime-original detours that can be skipped without confusion.'],
+      ['The films are standalone','Except Film: Z, Stampede and Red, none affect the main story.'],
+      ['Or start with the remake','The recent re-adaptation covers the opening arcs at a faster pace.']
+    ]},
+  { id:'steins', name:'Steins;Gate', group:'Complicated', note:'One series, one divergent sequel, and a film. Order matters for the ending.',
+    steps:[
+      ['Steins;Gate','The original 24-episode run.'],
+      ['Steins;Gate: The Movie – Load Region of Déjà Vu','An epilogue film. Optional.'],
+      ['Steins;Gate 0','Set inside a different timeline branch. Watch after the original series only.'],
+      ['Skip: episode 23β','A special that only makes sense as a bridge into 0.']
+    ]}
+];
+
+const orderChips = document.getElementById('orderChips');
+const ordersEl = document.getElementById('orders');
+const GROUPS = ['All', ...new Set(ORDERS.map(o => o.group))];
+let group = 'All';
+
+orderChips.innerHTML = GROUPS.map(g => `<button class="chip${g==='All'?' on':''}" data-g="${g}">${g}</button>`).join('');
+orderChips.addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if(!c) return;
+  group = c.dataset.g;
+  [...orderChips.children].forEach(x => x.classList.toggle('on', x === c));
+  Sfx.play('tick');
+  renderOrders();
+});
+
+function renderOrders(){
+  const list = ORDERS.filter(o => group === 'All' || o.group === group);
+  ordersEl.innerHTML = list.map((o,i) => `
+    <details class="order rv">
+      <summary><span class="num">${String(i+1).padStart(2,'0')}</span>${esc(o.name)}<span class="arw">›</span></summary>
+      <div class="order-body">
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;margin:0 0 6px;">${esc(o.note)}</p>
+        ${o.steps.map(([t,d],k) => `
+          <div class="step">
+            <span class="i">${k+1}</span>
+            <div><div class="t">${esc(t)}</div><div class="d">${esc(d)}</div>
+            <button class="lookup" data-find="${esc(t.replace(/^Skip[^:]*:\s*/,'').split('(')[0].trim())}">Where can I watch this?</button></div>
+          </div>`).join('')}
+      </div>
+    </details>`).join('');
+  reveal(ordersEl);
+}
+ordersEl.addEventListener('click', e => {
+  const b = e.target.closest('[data-find]');
+  if(b){ e.preventDefault(); lookUp(b.dataset.find); }
+});
+renderOrders();
+
+/* ==========================================================
+   3. STARTING POINTS
+   ========================================================== */
+const STARTERS = [
+  { h:'You want a big adventure', p:'Long-running, easy to fall into, and a lot of it to enjoy.', picks:['Fullmetal Alchemist: Brotherhood','Hunter x Hunter','One Piece'] },
+  { h:'You want something short', p:'Twelve to twenty-six episodes. One weekend, done.', picks:['Death Note','Erased','Bocchi the Rock!'] },
+  { h:'You want to feel something', p:'Quieter shows that trade spectacle for weight.', picks:['Violet Evergarden','A Silent Voice','March Comes In Like a Lion'] },
+  { h:'You want a film, not a series', p:'Self-contained, two hours, no commitment.', picks:['Spirited Away','Your Name','A Silent Voice'] },
+  { h:'You want the loud stuff', p:'Fights, momentum, and animation worth pausing on.', picks:['Demon Slayer','Jujutsu Kaisen','Mob Psycho 100'] },
+  { h:'You want something funny', p:'Comedies that hold up on a rewatch.', picks:['One Punch Man','Grand Blue','Kaguya-sama: Love Is War'] }
+];
+document.getElementById('starters').innerHTML = STARTERS.map(s => `
+  <div class="st rv">
+    <h4>${esc(s.h)}</h4><p>${esc(s.p)}</p>
+    <div class="picks">${s.picks.map(t => `<button data-find="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+  </div>`).join('');
+document.getElementById('starters').addEventListener('click', e => {
+  const b = e.target.closest('[data-find]');
+  if(b) lookUp(b.dataset.find);
+});
+
+/* ==========================================================
+   4. LIVE LOOKUP
+   ========================================================== */
+const lr = document.getElementById('lr');
+
+async function lookUp(name){
+  const input = document.getElementById('q');
+  input.value = name;
+  input.closest('.searchbar').classList.add('has-value');
+  document.querySelector('.lookup-box').scrollIntoView({ behavior:'smooth', block:'start' });
+  await showStreams(name);
+}
+
+async function showStreams(name){
+  if(!name || name.length < 2){ lr.classList.remove('on'); return; }
+  const box = document.getElementById('q').closest('.searchbar');
+  box.classList.add('busy');
+  try{
+    const d = await gql(
+      `query($q:String){ Page(page:1,perPage:1){ media(type:ANIME, search:$q, sort:SEARCH_MATCH, isAdult:false){ ${MEDIA_FIELDS} } } }`,
+      { q:name }, 'guide');
+    const m = stash(d.Page.media)[0];
+    if(!m){
+      lr.classList.add('on');
+      document.getElementById('lrTitle').textContent = 'No match for “' + name + '”';
+      document.getElementById('lrMeta').textContent = 'Check the spelling, or try the romaji title.';
+      document.getElementById('lrWhere').innerHTML = '';
+      document.getElementById('lrImg').src = posterFor(name);
+      return;
+    }
+    const t = titleOf(m);
+    document.getElementById('lrImg').src = m.coverImage.large;
+    document.getElementById('lrImg').dataset.fb = t;
+    document.getElementById('lrTitle').textContent = t;
+    document.getElementById('lrMeta').textContent =
+      [m.format?.replace('_',' '), m.seasonYear, m.episodes && m.episodes+' eps', scoreOf(m) && '★ '+scoreOf(m)]
+      .filter(Boolean).join(' · ');
+
+    const streams = (m.externalLinks || []).filter(l => l.type === 'STREAMING');
+    document.getElementById('lrWhere').innerHTML = streams.length
+      ? streams.map(l => `<a class="where-link" href="${esc(l.url)}" target="_blank" rel="noopener"><span class="dot"></span>${esc(l.site)}${l.language ? ' · '+esc(l.language) : ''}</a>`).join('')
+      : `<span class="none">No official stream is listed for this title. It may not be licensed in any region yet.</span>`;
+
+    const open = document.getElementById('lrOpen');
+    open.onclick = e => { e.preventDefault(); openSheet(m.id); };
+    armFallbacks(lr);
+    lr.classList.add('on');
+  }catch(e){
+    if(isStale(e)) return;
+    toast('Lookup failed. Try again.', true);
+  }finally{ box.classList.remove('busy'); }
+}
+
+makeSearch({
+  input: document.getElementById('q'),
+  channel: 'guideSuggest',
+  onSearch(v){ showStreams(v); }
+});
+const qParam = new URLSearchParams(location.search).get('q');
+if(qParam) lookUp(qParam);
+</script>
+</body>
+</html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060812">
+<title>Browse — Anime World</title>
+<meta name="description" content="Search and filter thousands of anime by genre, format, year, season and status.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Anime World">
+<meta property="og:image" content="icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta property="og:title" content="Browse — Anime World">
+<meta property="og:description" content="Search and filter thousands of anime by genre, format, year, season and status.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Chakra+Petch:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&family=Zen+Dots&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.controls{ position:sticky; top:var(--nav-h); z-index:120; padding:16px 0 14px;
+  background:linear-gradient(to bottom,var(--ink) 72%,transparent); backdrop-filter:blur(10px); }
+.controls .searchbar{ max-width:620px; }
+.controls .filters{ margin-top:12px; }
+.active-filters{ display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.afx{ display:inline-flex; align-items:center; gap:7px; padding:6px 8px 6px 13px; border-radius:999px;
+  background:color-mix(in srgb,var(--accent) 14%,transparent); border:1px solid color-mix(in srgb,var(--accent) 34%,transparent);
+  color:var(--accent); font-size:12.5px; font-weight:600; }
+.afx button{ background:none; border:none; color:inherit; cursor:pointer; font-size:14px; line-height:1; padding:2px 4px; border-radius:50%; }
+.afx button:hover{ background:rgba(255,255,255,.14); }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<nav>
+  <a href="index.html" class="nav-logo"><span class="mark"></span>ANIME WORLD</a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="browse.html" class="current">Browse</a></li>
+    <li><a href="find.html">Find</a></li>
+    <li><a href="schedule.html">Schedule</a></li>
+    <li><a href="quotes.html">Quotes</a></li>
+    <li><a href="guide.html">Guide</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="sound-toggle" aria-label="Turn sound on">🔈</button>
+    <span id="navAuth"></span>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<header class="page-head wrap">
+  <span class="kicker">Full catalogue</span>
+  <h1>Browse <em>everything</em></h1>
+  <p class="sub">Start typing and results update as you go. Stack as many filters as you like — clearing one never resets the rest.</p>
+</header>
+
+<div class="controls">
+  <div class="wrap">
+    <div class="suggest-wrap">
+      <div class="searchbar">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Search by title…" autocomplete="off" aria-label="Search anime by title">
+        <span class="spin"></span>
+        <button class="clear" aria-label="Clear search">✕</button>
+      </div>
+      <div class="suggest" id="qSuggest"></div>
+    </div>
+
+    <div class="filters">
+      <span class="sel"><select id="fGenre" aria-label="Genre"><option value="">Any genre</option></select></span>
+      <span class="sel"><select id="fFormat" aria-label="Format">
+        <option value="">Any format</option>
+        <option value="TV">TV series</option><option value="TV_SHORT">TV short</option>
+        <option value="MOVIE">Movie</option><option value="OVA">OVA</option>
+        <option value="ONA">ONA</option><option value="SPECIAL">Special</option>
+      </select></span>
+      <span class="sel"><select id="fStatus" aria-label="Status">
+        <option value="">Any status</option>
+        <option value="RELEASING">Airing now</option><option value="FINISHED">Finished</option>
+        <option value="NOT_YET_RELEASED">Upcoming</option><option value="HIATUS">On hiatus</option>
+      </select></span>
+      <span class="sel"><select id="fSeason" aria-label="Season">
+        <option value="">Any season</option>
+        <option value="WINTER">Winter</option><option value="SPRING">Spring</option>
+        <option value="SUMMER">Summer</option><option value="FALL">Fall</option>
+      </select></span>
+      <span class="sel"><select id="fYear" aria-label="Year"><option value="">Any year</option></select></span>
+      <span class="sel"><select id="fSort" aria-label="Sort by">
+        <option value="POPULARITY_DESC">Most popular</option>
+        <option value="TRENDING_DESC">Trending</option>
+        <option value="SCORE_DESC">Highest rated</option>
+        <option value="FAVOURITES_DESC">Most favourited</option>
+        <option value="START_DATE_DESC">Newest first</option>
+        <option value="TITLE_ROMAJI">A to Z</option>
+      </select></span>
+    </div>
+
+    <div class="chips" id="seasonChips" style="margin-top:12px;">
+      <button class="chip" data-q="this">This season</button>
+      <button class="chip" data-q="next">Next season</button>
+      <button class="chip" data-q="last">Last season</button>
+      <button class="chip" data-q="movies">Top movies</button>
+      <button class="chip" data-q="classics">Classics</button>
+      <button class="chip" data-q="short">Short & sweet</button>
+    </div>
+    <div class="active-filters" id="activeFilters"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="result-line">
+    <div class="count" id="count">Loading…</div>
+    <button class="btn btn-ghost btn-sm" id="clearAll" style="display:none;">Clear all filters</button>
+  </div>
+
+  <div class="grid" id="grid">
+    <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+    <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+    <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+    <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+    <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+    <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+    <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+    <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+  </div>
+
+  <div style="text-align:center; margin-top:40px;">
+    <button class="btn btn-outline" id="more" style="display:none;">Load more</button>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-bot">
+      <p>© 2026 Anime World · Built by <span style="color:var(--accent);font-weight:600">Tawsikul Islam</span></p>
+      <p>Catalogue data by AniList</p>
+    </div>
+  </div>
+</footer>
+
+<div id="toasts"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="site-config.js"></script>
+<script src="firebase-config.js"></script>
+<script src="shared.js"></script>
+<script src="stage.js"></script>
+<script>
+/* ==========================================================
+   BROWSE
+   What was broken before, and what changed:
+   1. A filter changed mid-request used to be swallowed by an
+      `isLoading` guard and silently ignored. Requests are now
+      keyed — a newer one always wins, none are dropped.
+   2. Typing fast could let an older response land last and
+      overwrite newer results. Stale responses are discarded.
+   3. Searching while sorted by popularity buried exact matches.
+      A search now sorts by relevance unless you pick a sort.
+   4. Filters live in the URL, so results are shareable and the
+      back button behaves.
+   ========================================================== */
+
+const GENRES = ['Action','Adventure','Comedy','Drama','Ecchi','Fantasy','Horror','Mahou Shoujo',
+  'Mecha','Music','Mystery','Psychological','Romance','Sci-Fi','Slice of Life','Sports','Supernatural','Thriller'];
+
+const F = {
+  q:      document.getElementById('q'),
+  genre:  document.getElementById('fGenre'),
+  format: document.getElementById('fFormat'),
+  status: document.getElementById('fStatus'),
+  season: document.getElementById('fSeason'),
+  year:   document.getElementById('fYear'),
+  sort:   document.getElementById('fSort')
+};
+const grid = document.getElementById('grid'), moreBtn = document.getElementById('more'),
+      countEl = document.getElementById('count'), clearBtn = document.getElementById('clearAll'),
+      chipsEl = document.getElementById('activeFilters');
+
+/* populate dropdowns */
+GENRES.forEach(g => F.genre.add(new Option(g, g)));
+const thisYear = new Date().getFullYear();
+for (let y = thisYear + 1; y >= 1960; y--) F.year.add(new Option(y, y));
+
+/* ---------- URL <-> form ---------- */
+const KEYS = ['q','genre','format','status','season','year','sort'];
+function readURL(){
+  const p = new URLSearchParams(location.search);
+  KEYS.forEach(k => { const v = p.get(k); if (v != null) F[k].value = v; });
+}
+function writeURL(){
+  const p = new URLSearchParams();
+  KEYS.forEach(k => { const v = F[k].value.trim(); if (v && !(k === 'sort' && v === 'POPULARITY_DESC')) p.set(k, v); });
+  const qs = p.toString();
+  history.replaceState(history.state, '', (qs ? '?' + qs : location.pathname) + location.hash);
+}
+
+/* ---------- state ---------- */
+let page = 1, hasNext = false, total = 0, loadingMore = false;
+
+const QUERY = `
+query($page:Int,$perPage:Int,$search:String,$genre:String,$format:MediaFormat,
+      $status:MediaStatus,$season:MediaSeason,$year:Int,$sort:[MediaSort]){
+  Page(page:$page, perPage:$perPage){
+    pageInfo{ total currentPage hasNextPage }
+    media(type:ANIME, isAdult:false, search:$search, genre:$genre, format:$format,
+          status:$status, season:$season, seasonYear:$year, sort:$sort){
+      ${MEDIA_FIELDS}
+    }
+  }
+}`;
+
+function vars(){
+  const q = F.q.value.trim();
+  const sortPicked = F.sort.value;
+  const v = { page, perPage: 24 };
+  if (q) v.search = q;
+  if (F.genre.value)  v.genre  = F.genre.value;
+  if (F.format.value) v.format = F.format.value;
+  if (F.status.value) v.status = F.status.value;
+  if (F.season.value) v.season = F.season.value;
+  if (F.year.value)   v.year   = Number(F.year.value);
+  /* relevance wins while searching, unless a sort was deliberately chosen */
+  v.sort = (q && sortPicked === 'POPULARITY_DESC') ? ['SEARCH_MATCH'] : [sortPicked];
+  return v;
+}
+
+/* AniList needs a season and a year together — one without the other returns nothing */
+function seasonGuard(){
+  const bad = (F.season.value && !F.year.value);
+  if (bad) F.year.value = String(thisYear);
+  return bad;
+}
+
+function paintChips(){
+  const parts = [];
+  if (F.q.value.trim())  parts.push(['q', `“${F.q.value.trim()}”`]);
+  if (F.genre.value)     parts.push(['genre', F.genre.value]);
+  if (F.format.value)    parts.push(['format', F.format.selectedOptions[0].text]);
+  if (F.status.value)    parts.push(['status', F.status.selectedOptions[0].text]);
+  if (F.season.value)    parts.push(['season', F.season.selectedOptions[0].text]);
+  if (F.year.value)      parts.push(['year', F.year.value]);
+  chipsEl.innerHTML = parts.map(([k, label]) =>
+    `<span class="afx">${esc(label)}<button data-drop="${k}" aria-label="Remove ${esc(label)}">✕</button></span>`).join('');
+  clearBtn.style.display = parts.length ? 'inline-flex' : 'none';
+  KEYS.forEach(k => { if (k !== 'q' && k !== 'sort') F[k].parentElement.classList.toggle('set', !!F[k].value); });
+}
+chipsEl.addEventListener('click', e => {
+  const b = e.target.closest('[data-drop]');
+  if (!b) return;
+  F[b.dataset.drop].value = '';
+  if (b.dataset.drop === 'q') F.q.closest('.searchbar').classList.remove('has-value');
+  run(true);
+});
+clearBtn.addEventListener('click', () => {
+  KEYS.forEach(k => { F[k].value = ''; });
+  F.sort.value = 'POPULARITY_DESC';
+  F.q.closest('.searchbar').classList.remove('has-value');
+  run(true);
+});
+
+/* ---------- the loader ---------- */
+async function run(reset){
+  if (reset) { page = 1; loadingMore = false; }
+  else if (loadingMore) return;
+  if (!reset) loadingMore = true;
+
+  seasonGuard();
+  paintChips();
+  writeURL();
+
+  if (reset) {
+    grid.innerHTML = Array.from({ length: 8 },
+      () => '<div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>').join('');
+    moreBtn.style.display = 'none';
+    countEl.textContent = 'Searching…';
+  } else {
+    moreBtn.disabled = true; moreBtn.textContent = 'Loading…';
+  }
+
+  try {
+    const d = await gql(QUERY, vars(), 'browse');
+    const list = stash(d.Page.media);
+    total = d.Page.pageInfo.total;
+    hasNext = d.Page.pageInfo.hasNextPage;
+
+    if (reset) grid.innerHTML = '';
+    if (reset && !list.length) {
+      grid.innerHTML = `<div class="empty">
+        <strong>Nothing matched</strong>
+        Try fewer filters, or check the spelling of the title.
+        <div><button class="btn btn-sm" onclick="document.getElementById('clearAll').click()">Clear all filters</button></div>
+      </div>`;
+      countEl.textContent = '0 results';
+    } else {
+      grid.insertAdjacentHTML('beforeend', list.map(m => cardHTML(m, { countdown: F.status.value === 'RELEASING' })).join(''));
+      armFallbacks(grid); reveal(grid); paintFavs(grid); tickCountdowns();
+      countEl.innerHTML = `<b>${total.toLocaleString()}</b> ${total === 1 ? 'title' : 'titles'} found`;
+    }
+    moreBtn.style.display = hasNext ? 'inline-flex' : 'none';
+  } catch (e) {
+    if (isStale(e)) return;                 // superseded — the newer request owns the grid
+    if (reset) {
+      grid.innerHTML = `<div class="empty"><strong>Couldn’t load results</strong>${esc(e.message || 'Check your connection.')}
+        <div><button class="btn btn-sm" onclick="run(true)">Try again</button></div></div>`;
+      countEl.textContent = '';
+    } else toast('Could not load more results', true);
+  } finally {
+    moreBtn.disabled = false; moreBtn.textContent = 'Load more';
+    loadingMore = false;
+  }
+}
+
+moreBtn.addEventListener('click', () => { page++; run(false); });
+
+/* every control just re-runs from page 1 — no guards to swallow the change */
+['genre','format','status','season','year','sort'].forEach(k =>
+  F[k].addEventListener('change', () => run(true)));
+
+makeSearch({ input: F.q, channel: 'browseSuggest', onSearch: () => run(true) });
+
+/* infinite scroll as a bonus; the button still works if the observer doesn't fire */
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(es => {
+    if (es[0].isIntersecting && hasNext && !loadingMore) { page++; run(false); }
+  }, { rootMargin: '600px' }).observe(moreBtn);
+}
+
+/* ---------- one-tap presets ---------- */
+const SEASONS = ['WINTER','SPRING','SUMMER','FALL'];
+function seasonAt(offset){
+  const d = new Date(); let i = Math.floor(d.getMonth()/3) + offset, y = d.getFullYear();
+  while(i < 0){ i += 4; y--; } while(i > 3){ i -= 4; y++; }
+  return { season: SEASONS[i], year: y };
+}
+document.getElementById('seasonChips').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if(!c) return;
+  const on = c.classList.contains('on');
+  [...c.parentElement.children].forEach(x => x.classList.remove('on'));
+  KEYS.forEach(k => { F[k].value = ''; });
+  F.sort.value = 'POPULARITY_DESC';
+  F.q.closest('.searchbar').classList.remove('has-value');
+  if(!on){
+    c.classList.add('on');
+    const p = c.dataset.q;
+    if(p === 'this' || p === 'next' || p === 'last'){
+      const sy = seasonAt(p === 'this' ? 0 : p === 'next' ? 1 : -1);
+      F.season.value = sy.season; F.year.value = String(sy.year);
+    } else if(p === 'movies'){ F.format.value = 'MOVIE'; F.sort.value = 'SCORE_DESC'; }
+    else if(p === 'classics'){ F.year.value = '1998'; F.sort.value = 'SCORE_DESC'; }
+    else if(p === 'short'){ F.format.value = 'TV_SHORT'; }
+  }
+  Sfx.play('tick');
+  run(true);
+});
+
+readURL();
+paintChips();
+if (F.q.value) F.q.closest('.searchbar').classList.add('has-value');
+run(true);
+</script>
+</body>
+</html>

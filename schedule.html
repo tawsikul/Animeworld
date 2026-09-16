@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060812">
+<title>Schedule &amp; countdowns — Anime World</title>
+<meta name="description" content="Live countdowns to the next episode of everything currently airing, grouped by the day it drops in your timezone.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Anime World">
+<meta property="og:image" content="icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta property="og:title" content="Schedule &amp; countdowns — Anime World">
+<meta property="og:description" content="Live countdowns to the next episode of everything currently airing, grouped by the day it drops in your timezone.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Chakra+Petch:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&family=Zen+Dots&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* the next drop, front and centre */
+.next-up{
+  position:relative; display:grid; grid-template-columns:150px 1fr; gap:22px; align-items:center;
+  padding:20px; border-radius:var(--r-lg); overflow:hidden; cursor:pointer;
+  background:linear-gradient(120deg,var(--panel-2),var(--ink-2)); border:1px solid var(--line-hot);
+  transition:border-color .4s, box-shadow .4s;
+}
+.next-up:hover{ border-color:color-mix(in srgb,var(--accent) 50%,transparent); box-shadow:0 0 60px -34px var(--accent); }
+.next-up img{ width:100%; aspect-ratio:2/3; object-fit:cover; border-radius:var(--r); }
+.next-up .lab{ font-size:12px; font-weight:600; color:var(--accent); }
+.next-up h2{ font-size:clamp(22px,3.6vw,34px); line-height:1.02; margin:8px 0 14px; }
+.clock{ display:flex; gap:10px; flex-wrap:wrap; }
+.clock .u{ min-width:64px; padding:10px 12px; border-radius:10px; background:rgba(0,0,0,.32); border:1px solid var(--line-hot); text-align:center; }
+.clock .u b{ display:block; font-family:'Chakra Petch',monospace; font-size:26px; font-weight:700; color:var(--accent); line-height:1; }
+.clock .u span{ font-size:10.5px; color:var(--muted); letter-spacing:.06em; }
+@media (max-width:620px){ .next-up{ grid-template-columns:96px 1fr; gap:14px; padding:14px; } .clock .u{ min-width:54px; padding:8px; } .clock .u b{ font-size:20px; } }
+
+.daybar{ position:sticky; top:var(--nav-h); z-index:120; padding:14px 0 12px;
+  background:linear-gradient(to bottom,var(--ink) 72%,transparent); backdrop-filter:blur(10px); }
+.daybar .searchbar{ max-width:520px; margin-bottom:12px; }
+.chip .dot{ display:inline-block; width:5px; height:5px; border-radius:50%; background:currentColor; margin-right:6px; vertical-align:1px; }
+
+.day-group{ margin-top:34px; }
+.day-head{ display:flex; align-items:baseline; gap:12px; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--line); }
+.day-head h3{ font-size:clamp(20px,3.2vw,28px); }
+.day-head .n{ font-size:13px; color:var(--muted); }
+.day-head .today{ font-size:11px; font-weight:700; color:var(--accent-ink); background:linear-gradient(120deg,var(--accent),var(--accent-2));
+  padding:3px 9px; border-radius:999px; }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<nav>
+  <a href="index.html" class="nav-logo"><span class="mark"></span>ANIME WORLD</a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="browse.html">Browse</a></li>
+    <li><a href="find.html">Find</a></li>
+    <li><a href="schedule.html" class="current">Schedule</a></li>
+    <li><a href="quotes.html">Quotes</a></li>
+    <li><a href="guide.html">Guide</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="sound-toggle" aria-label="Turn sound on">🔈</button>
+    <span id="navAuth"></span>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<header class="page-head wrap">
+  <span class="kicker">Airing now</span>
+  <h1>Next episode <em>countdowns</em></h1>
+  <p class="sub" id="tzNote">Every timer below counts down in your local timezone, ticking live.</p>
+</header>
+
+<main class="wrap">
+  <div class="next-up rv" id="nextUp" style="visibility:hidden;">
+    <img id="nuImg" alt="" data-fb="Next episode">
+    <div>
+      <div class="lab">Next episode anywhere</div>
+      <h2 id="nuTitle">—</h2>
+      <div class="clock" id="nuClock">
+        <div class="u"><b id="nuD">0</b><span>DAYS</span></div>
+        <div class="u"><b id="nuH">00</b><span>HRS</span></div>
+        <div class="u"><b id="nuM">00</b><span>MIN</span></div>
+        <div class="u"><b id="nuS">00</b><span>SEC</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="daybar">
+    <div class="suggest-wrap">
+      <div class="searchbar">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Filter airing shows…" autocomplete="off" aria-label="Filter airing shows">
+        <span class="spin"></span>
+        <button class="clear" aria-label="Clear">✕</button>
+      </div>
+      <div class="suggest" id="qSuggest"></div>
+    </div>
+    <div class="chips" id="dayChips"></div>
+  </div>
+
+  <div id="days">
+    <div class="grid">
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+      <div class="sk"><div class="sk-img"></div><div class="sk-line"></div><div class="sk-line short"></div></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-bot">
+      <p>© 2026 Anime World · Built by <span style="color:var(--accent);font-weight:600">Tawsikul Islam</span></p>
+      <p>Airing times by AniList · shown in your timezone</p>
+    </div>
+  </div>
+</footer>
+
+<div id="toasts"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="site-config.js"></script>
+<script src="firebase-config.js"></script>
+<script src="shared.js"></script>
+<script src="stage.js"></script>
+<script>
+/* ==========================================================
+   SCHEDULE
+   Pulls the airing schedule for the next 7 days straight from
+   AniList, buckets it by the local day each episode lands on,
+   then filters in memory so the day chips and the search box
+   respond instantly instead of re-querying the network.
+   ========================================================== */
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const daysEl = document.getElementById('days');
+const chipsEl = document.getElementById('dayChips');
+
+let SCHEDULE = [];        // [{ media, airingAt, episode }]
+let activeDay = 'all';
+let filterText = '';
+
+document.getElementById('tzNote').textContent =
+  'Every timer counts down live in your local timezone (' +
+  (Intl.DateTimeFormat().resolvedOptions().timeZone || 'local') + ').';
+
+const SCHEDULE_QUERY = `
+query($from:Int,$to:Int,$page:Int){
+  Page(page:$page, perPage:50){
+    pageInfo{ hasNextPage currentPage }
+    airingSchedules(airingAt_greater:$from, airingAt_lesser:$to, sort:TIME){
+      airingAt episode
+      media{ ${MEDIA_FIELDS} }
+    }
+  }
+}`;
+
+async function loadSchedule(){
+  const now = Math.floor(Date.now()/1000);
+  const to = now + 7*86400;
+  const all = [];
+  try{
+    for(let p = 1; p <= 4; p++){
+      const d = await gql(SCHEDULE_QUERY, { from: now - 3600, to, page: p }, 'sched' + p);
+      const rows = (d.Page.airingSchedules || []).filter(r => r.media && !r.media.isAdult && r.media.coverImage?.large);
+      rows.forEach(r => { stash([r.media]); all.push({ media: r.media, airingAt: r.airingAt, episode: r.episode }); });
+      if(!d.Page.pageInfo.hasNextPage) break;
+    }
+    /* one row per series — the soonest episode */
+    const seen = new Set();
+    SCHEDULE = all.sort((a,b) => a.airingAt - b.airingAt)
+                  .filter(r => { const k = String(r.media.id); if(seen.has(k)) return false; seen.add(k); return true; });
+    if(!SCHEDULE.length) throw new Error('empty');
+    buildChips();
+    render();
+    showNextUp();
+  }catch(e){
+    if(isStale(e)) return;
+    daysEl.innerHTML = `<div class="empty"><strong>Schedule unavailable</strong>
+      The airing feed didn’t respond. Reload to try again.
+      <div><button class="btn btn-sm" onclick="location.reload()">Reload</button></div></div>`;
+  }
+}
+
+function buildChips(){
+  const counts = {};
+  SCHEDULE.forEach(r => { const d = new Date(r.airingAt*1000).getDay(); counts[d] = (counts[d]||0)+1; });
+  const today = new Date().getDay();
+  const order = Array.from({length:7}, (_,i) => (today+i)%7);
+  chipsEl.innerHTML =
+    `<button class="chip on" data-day="all">All week · ${SCHEDULE.length}</button>` +
+    order.filter(d => counts[d]).map(d =>
+      `<button class="chip" data-day="${d}"><span class="dot"></span>${d===today?'Today':DAYS[d]} · ${counts[d]}</button>`).join('');
+}
+chipsEl.addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if(!c) return;
+  activeDay = c.dataset.day;
+  [...chipsEl.children].forEach(x => x.classList.toggle('on', x === c));
+  Sfx.play('tick');
+  render();
+});
+
+function render(){
+  const today = new Date().getDay();
+  const rows = SCHEDULE.filter(r => {
+    if(activeDay !== 'all' && new Date(r.airingAt*1000).getDay() !== Number(activeDay)) return false;
+    if(filterText){
+      const hay = [r.media.title?.english, r.media.title?.romaji, r.media.title?.native, ...(r.media.genres||[])]
+        .filter(Boolean).join(' ').toLowerCase();
+      if(!hay.includes(filterText)) return false;
+    }
+    return true;
+  });
+
+  if(!rows.length){
+    daysEl.innerHTML = `<div class="empty"><strong>Nothing here</strong>
+      ${filterText ? 'No airing show matches “'+esc(filterText)+'”.' : 'No episodes scheduled for that day.'}</div>`;
+    return;
+  }
+
+  /* bucket by local day */
+  const buckets = new Map();
+  rows.forEach(r => {
+    const d = new Date(r.airingAt*1000);
+    const key = d.toDateString();
+    if(!buckets.has(key)) buckets.set(key, { date: d, rows: [] });
+    buckets.get(key).rows.push(r);
+  });
+
+  daysEl.innerHTML = [...buckets.values()].map(b => {
+    const isToday = b.date.toDateString() === new Date().toDateString();
+    const label = DAYS[b.date.getDay()] + ' ' + b.date.getDate() + ' ' +
+      b.date.toLocaleString(undefined, { month:'short' });
+    return `<section class="day-group">
+      <div class="day-head">
+        <h3>${esc(label)}</h3>
+        ${isToday ? '<span class="today">Today</span>' : ''}
+        <span class="n">${b.rows.length} ${b.rows.length===1?'episode':'episodes'}</span>
+      </div>
+      <div class="grid">${b.rows.map(r => {
+        const m = r.media;
+        const time = new Date(r.airingAt*1000).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+        return cardHTML({ ...m, nextAiringEpisode:{ airingAt:r.airingAt, episode:r.episode } },
+                        { countdown:true, extra:'Airs ' + time });
+      }).join('')}</div>
+    </section>`;
+  }).join('');
+
+  armFallbacks(daysEl); reveal(daysEl); paintFavs(daysEl); tickCountdowns();
+}
+
+/* ---------- hero countdown ---------- */
+let nextRow = null;
+function showNextUp(){
+  nextRow = SCHEDULE.find(r => r.airingAt*1000 > Date.now()) || SCHEDULE[0];
+  if(!nextRow) return;
+  const box = document.getElementById('nextUp');
+  const m = nextRow.media;
+  document.getElementById('nuImg').src = m.coverImage.large;
+  document.getElementById('nuImg').dataset.fb = titleOf(m);
+  document.getElementById('nuTitle').textContent = titleOf(m) + ' · EP ' + nextRow.episode;
+  box.style.visibility = 'visible';
+  box.onclick = () => openSheet(m.id);
+  armFallbacks(box);
+}
+setInterval(() => {
+  if(!nextRow) return;
+  let s = Math.max(0, nextRow.airingAt - Math.floor(Date.now()/1000));
+  const d = Math.floor(s/86400); s -= d*86400;
+  const h = Math.floor(s/3600);  s -= h*3600;
+  const m = Math.floor(s/60);    s -= m*60;
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('nuD').textContent = d;
+  document.getElementById('nuH').textContent = pad(h);
+  document.getElementById('nuM').textContent = pad(m);
+  document.getElementById('nuS').textContent = pad(s);
+}, 1000);
+
+/* ---------- search filters the loaded schedule instantly ---------- */
+makeSearch({
+  input: document.getElementById('q'),
+  channel: 'schedSuggest',
+  delay: 160,
+  onSearch(q){ filterText = q.toLowerCase(); render(); }
+});
+
+loadSchedule();
+</script>
+</body>
+</html>

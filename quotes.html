@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060812">
+<title>Quote wall — Anime World</title>
+<meta name="description" content="Lines from anime worth remembering. Search by character, series or mood.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Anime World">
+<meta property="og:image" content="icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta property="og:title" content="Quote wall — Anime World">
+<meta property="og:description" content="Lines from anime worth remembering. Search by character, series or mood.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Chakra+Petch:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&family=Zen+Dots&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.qbar{ position:sticky; top:var(--nav-h); z-index:120; padding:14px 0 12px;
+  background:linear-gradient(to bottom,var(--ink) 74%,transparent); backdrop-filter:blur(10px); }
+.qbar .searchbar{ max-width:520px; margin-bottom:12px; }
+.qcard{ opacity:0; transform:translateY(16px); animation:qIn .5s var(--ease) forwards; }
+@keyframes qIn{ to{ opacity:1; transform:none; } }
+.qtag{ position:absolute; top:16px; right:16px; font-size:10.5px; font-weight:700; color:var(--muted-2);
+  letter-spacing:.06em; }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<nav>
+  <a href="index.html" class="nav-logo"><span class="mark"></span>ANIME WORLD</a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="browse.html">Browse</a></li>
+    <li><a href="find.html">Find</a></li>
+    <li><a href="schedule.html">Schedule</a></li>
+    <li><a href="quotes.html" class="current">Quotes</a></li>
+    <li><a href="guide.html">Guide</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="sound-toggle" aria-label="Turn sound on">🔈</button>
+    <span id="navAuth"></span>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<header class="page-head wrap">
+  <span class="kicker">The quote wall</span>
+  <h1>Lines worth <em>remembering</em></h1>
+  <p class="sub">Short lines from across the medium, credited to the character who said them. Search a series, a name, or a mood.</p>
+</header>
+
+<main class="wrap">
+  <section class="quote-hero rv" style="margin-bottom:34px;">
+    <div class="qtext" id="spotlight"></div>
+    <div class="qwho" id="spotlightWho"></div>
+    <div style="margin-top:24px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-sm" id="shuffle">Shuffle</button>
+      <button class="btn btn-outline btn-sm" id="findIt">Find this anime</button>
+    </div>
+  </section>
+
+  <div class="qbar">
+    <div class="searchbar">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Search a character, series or word…" autocomplete="off" aria-label="Search quotes">
+      <button class="clear" aria-label="Clear">✕</button>
+    </div>
+    <div class="chips" id="tagChips"></div>
+  </div>
+
+  <div class="result-line"><div class="count" id="count"></div></div>
+  <div class="qgrid" id="qgrid"></div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-bot">
+      <p>© 2026 Anime World · Built by <span style="color:var(--accent);font-weight:600">Tawsikul Islam</span></p>
+      <p>Quotes are credited to their speaker and series</p>
+    </div>
+  </div>
+</footer>
+
+<div id="toasts"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="site-config.js"></script>
+<script src="firebase-config.js"></script>
+<script src="shared.js"></script>
+<script src="stage.js"></script>
+<script src="quotes.js"></script>
+<script>
+const grid = document.getElementById('qgrid');
+const countEl = document.getElementById('count');
+const tagChips = document.getElementById('tagChips');
+let tag = 'All', text = '';
+
+tagChips.innerHTML = QUOTE_TAGS.map(t =>
+  `<button class="chip${t==='All'?' on':''}" data-tag="${t}">${t}</button>`).join('');
+tagChips.addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if(!c) return;
+  tag = c.dataset.tag;
+  [...tagChips.children].forEach(x => x.classList.toggle('on', x === c));
+  Sfx.play('tick');
+  render();
+});
+
+function matches(qt){
+  if(tag !== 'All' && qt.tag !== tag) return false;
+  if(!text) return true;
+  return (qt.q + ' ' + qt.who + ' ' + qt.from + ' ' + qt.tag).toLowerCase().includes(text);
+}
+
+function render(){
+  const list = QUOTES.filter(matches);
+  countEl.innerHTML = `<b>${list.length}</b> ${list.length===1?'quote':'quotes'}`;
+  if(!list.length){
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1;">
+      <strong>No quote matched</strong>Try a series name like “One Piece”, or a character.</div>`;
+    return;
+  }
+  grid.innerHTML = list.map((qt,i) => `
+    <article class="qcard" style="animation-delay:${Math.min(i*28,420)}ms">
+      <span class="qtag">${esc(qt.tag)}</span>
+      <p class="q">“${esc(qt.q)}”</p>
+      <div class="who">${esc(qt.who)}</div>
+      <div class="from">${esc(qt.from)}</div>
+      <div class="qfoot">
+        <button class="qmini" data-find="${esc(qt.from)}">Watch it</button>
+        <button class="qmini" data-copy="${esc(qt.q)} — ${esc(qt.who)}, ${esc(qt.from)}">Copy</button>
+      </div>
+    </article>`).join('');
+}
+
+grid.addEventListener('click', async e => {
+  const find = e.target.closest('[data-find]');
+  if(find){ lookUp(find.dataset.find); return; }
+  const copy = e.target.closest('[data-copy]');
+  if(copy){
+    try{ await navigator.clipboard.writeText(copy.dataset.copy); toast('Quote copied'); Sfx.play('save'); }
+    catch{ toast('Copy is blocked in this browser', true); }
+  }
+});
+
+/* jump from a quote straight to the series' detail sheet */
+async function lookUp(seriesName){
+  try{
+    toast('Finding ' + seriesName + '…');
+    const d = await gql(
+      `query($q:String){ Page(page:1,perPage:1){ media(type:ANIME, search:$q, sort:SEARCH_MATCH, isAdult:false){ ${MEDIA_FIELDS} } } }`,
+      { q: seriesName }, 'lookup');
+    const m = stash(d.Page.media)[0];
+    if(m) openSheet(m.id);
+    else location.href = 'browse.html?q=' + encodeURIComponent(seriesName);
+  }catch(e){
+    if(!isStale(e)) location.href = 'browse.html?q=' + encodeURIComponent(seriesName);
+  }
+}
+
+/* ---------- spotlight ---------- */
+let current = null, typeTimer;
+function spotlight(){
+  current = QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  const el = document.getElementById('spotlight'), who = document.getElementById('spotlightWho');
+  const line = '“' + current.q + '”';
+  who.style.opacity = '0';
+  clearTimeout(typeTimer);
+  if(REDUCED){
+    el.textContent = line;
+    who.innerHTML = `${esc(current.who)} <span>— ${esc(current.from)}</span>`;
+    who.style.opacity = '1'; return;
+  }
+  let i = 0;
+  (function type(){
+    i++;
+    el.innerHTML = esc(line.slice(0,i)) + '<span class="caret"></span>';
+    if(i < line.length) typeTimer = setTimeout(type, 26);
+    else{
+      el.innerHTML = esc(line);
+      who.innerHTML = `${esc(current.who)} <span>— ${esc(current.from)}</span>`;
+      who.style.transition = 'opacity .5s'; who.style.opacity = '1';
+    }
+  })();
+}
+document.getElementById('shuffle').addEventListener('click', () => { spotlight(); Sfx.play('tick'); });
+document.getElementById('findIt').addEventListener('click', () => current && lookUp(current.from));
+
+makeSearch({
+  input: document.getElementById('q'),
+  suggest: false,
+  delay: 120,
+  onSearch(v){ text = v.toLowerCase(); render(); }
+});
+
+spotlight();
+render();
+</script>
+</body>
+</html>

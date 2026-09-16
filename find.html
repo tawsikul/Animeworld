@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060812">
+<title>Find by scene — Anime World</title>
+<meta name="description" content="Identify an anime from a screenshot, a short clip, or the song you remember.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Anime World">
+<meta property="og:image" content="icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta property="og:title" content="Find by scene — Anime World">
+<meta property="og:description" content="Identify an anime from a screenshot, a short clip, or the song you remember.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Chakra+Petch:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&family=Zen+Dots&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.modes{ display:flex; gap:6px; padding:5px; background:rgba(0,0,0,.3); border:1px solid var(--line-hot); border-radius:14px; margin-bottom:22px; }
+.mode{ flex:1; padding:12px 8px; border:none; border-radius:10px; cursor:pointer; background:transparent; color:var(--muted);
+  font-family:'Outfit',sans-serif; font-weight:600; font-size:13.5px; display:flex; flex-direction:column; align-items:center; gap:5px; transition:all .3s var(--ease); }
+.mode svg{ width:22px; height:22px; }
+.mode.on{ background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:var(--accent-ink); box-shadow:0 6px 18px -8px var(--accent); }
+.pane{ display:none; } .pane.on{ display:block; animation:fadeUp .35s var(--ease); }
+
+.drop{
+  position:relative; border:2px dashed var(--line-hot); border-radius:var(--r-lg); padding:34px 20px; text-align:center; cursor:pointer;
+  background:rgba(255,255,255,.015); transition:border-color .25s, background .25s, transform .25s var(--ease);
+}
+.drop:hover, .drop.over{ border-color:var(--accent); background:color-mix(in srgb,var(--accent) 6%,transparent); }
+.drop.over{ transform:scale(1.01); }
+.drop input{ position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.drop .ic{ width:52px; height:52px; margin:0 auto 12px; border-radius:16px; display:grid; place-items:center;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:var(--accent-ink); box-shadow:0 10px 30px -10px var(--accent); }
+.drop .ic svg{ width:26px; height:26px; }
+.drop h3{ font-family:'Outfit',sans-serif; font-weight:600; font-size:16px; color:var(--paper); }
+.drop p{ font-size:13px; color:var(--muted); margin-top:5px; line-height:1.55; }
+.drop .or{ margin-top:12px; font-size:12px; color:var(--muted-2); }
+
+.preview{ display:none; gap:14px; align-items:flex-start; margin-top:16px; padding:14px; border-radius:var(--r); background:var(--panel); border:1px solid var(--line); }
+.preview.on{ display:flex; animation:fadeUp .3s var(--ease); }
+.preview img, .preview canvas{ width:120px; border-radius:8px; background:#000; flex:none; }
+.preview .info{ flex:1; min-width:0; font-size:13px; color:var(--muted); line-height:1.6; }
+.preview .info b{ color:var(--paper); font-weight:600; display:block; font-size:14px; }
+.frames{ display:flex; gap:8px; margin-top:8px; }
+.frames canvas{ width:64px; height:36px; object-fit:cover; border-radius:5px; border:1px solid var(--line-hot); }
+
+.status{ display:flex; align-items:center; gap:10px; margin:16px 0 6px; font-size:13.5px; color:var(--muted); min-height:20px; }
+.status .spin{ width:15px; height:15px; border-radius:50%; border:2px solid var(--line-hot); border-top-color:var(--accent); animation:spin .7s linear infinite; }
+.status.err{ color:var(--red); }
+
+.hits{ display:flex; flex-direction:column; gap:10px; margin-top:14px; }
+.hit{
+  display:grid; grid-template-columns:118px 1fr; gap:14px; padding:12px; border-radius:var(--r); cursor:pointer;
+  background:var(--panel); border:1px solid var(--line); transition:transform .3s var(--ease), border-color .3s, box-shadow .3s;
+  opacity:0; transform:translateY(10px); animation:hitIn .4s var(--ease) forwards;
+}
+@keyframes hitIn{ to{ opacity:1; transform:none; } }
+.hit:hover{ transform:translateY(-3px); border-color:color-mix(in srgb,var(--accent) 45%,transparent); box-shadow:0 18px 40px -22px #000; }
+.hit .scene{ width:118px; aspect-ratio:16/9; object-fit:cover; border-radius:8px; background:#000; }
+.hit .cover{ width:118px; aspect-ratio:2/3; object-fit:cover; border-radius:8px; background:#000; }
+.hit h3{ font-family:'Outfit',sans-serif; font-weight:600; font-size:15px; color:var(--paper); line-height:1.25; }
+.hit .m{ font-size:12.5px; color:var(--muted); margin-top:4px; line-height:1.5; }
+.hit .m b{ color:var(--accent); font-weight:600; }
+.conf{ margin-top:8px; height:5px; border-radius:3px; background:rgba(255,255,255,.07); overflow:hidden; }
+.conf i{ display:block; height:100%; width:0; border-radius:3px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); transition:width .9s var(--ease); }
+.hit .cl{ font-family:'Chakra Petch',monospace; font-size:11.5px; color:var(--muted); margin-top:4px; }
+.hit.top{ border-color:color-mix(in srgb,var(--accent) 55%,transparent); box-shadow:0 0 40px -22px var(--accent); }
+.hit.top::before{ content:'Best match'; position:absolute; } .hit{ position:relative; }
+.hit.top::before{ top:-9px; left:12px; font-size:10.5px; font-weight:700; letter-spacing:.06em; padding:2px 8px; border-radius:999px;
+  background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:var(--accent-ink); }
+
+.rec-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px; }
+.rec-btn.live{ background:var(--red); color:#fff; box-shadow:0 8px 30px -10px var(--red); animation:pulseRec 1s ease-in-out infinite; }
+@keyframes pulseRec{ 50%{ box-shadow:0 8px 40px -6px var(--red); } }
+.meter{ flex:1; min-width:120px; height:8px; border-radius:4px; background:rgba(255,255,255,.07); overflow:hidden; }
+.meter i{ display:block; height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--red)); transition:width .08s linear; }
+
+.sub{ font-size:13.5px; color:var(--muted); line-height:1.6; margin:0 0 14px; }
+.tiny{ font-size:12px; color:var(--muted-2); margin-top:10px; line-height:1.5; }
+.tiny a{ color:var(--accent); }
+@media (max-width:480px){ .hit{ grid-template-columns:96px 1fr; } .hit .scene, .hit .cover{ width:96px; } .mode{ font-size:12px; } }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<nav>
+  <a href="index.html" class="nav-logo"><span class="mark"></span>ANIME WORLD</a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="browse.html">Browse</a></li>
+    <li><a href="find.html" class="current">Find</a></li>
+    <li><a href="schedule.html">Schedule</a></li>
+    <li><a href="quotes.html">Quotes</a></li>
+    <li><a href="guide.html">Guide</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="sound-toggle" aria-label="Mute sound">🔊</button>
+    <span id="navAuth"></span>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<header class="page-head wrap">
+  <span class="kicker">Find by scene</span>
+  <h1>What anime <em>is this?</em></h1>
+  <p class="sub">Drop in a screenshot, a short clip, or the song stuck in your head. Screenshots are matched against a database of billions of frames and come back with the exact episode and timestamp.</p>
+</header>
+
+<main class="wrap">
+  <div class="modes" role="tablist">
+    <button class="mode on" data-mode="shot" role="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg>Screenshot</button>
+    <button class="mode" data-mode="clip" role="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>Clip</button>
+    <button class="mode" data-mode="sound" role="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l11-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>Sound</button>
+  </div>
+
+  <!-- ============ SCREENSHOT ============ -->
+  <section class="pane on" id="pane-shot">
+    <div class="drop" id="dropShot">
+      <input type="file" id="fileShot" accept="image/*" aria-label="Choose a screenshot">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></div>
+      <h3>Drop a screenshot here</h3>
+      <p>Or tap to choose one. Any frame from the show works best — crops, phone photos of a screen, and memes with text on them are hit and miss.</p>
+      <div class="or">You can also paste an image with Ctrl+V / ⌘V</div>
+    </div>
+    <div class="preview" id="prevShot"><img id="prevShotImg" alt=""><div class="info"><b id="prevShotName"></b><span id="prevShotMeta"></span></div></div>
+    <div class="status" id="statShot"></div>
+    <div class="hits" id="hitsShot"></div>
+  </section>
+
+  <!-- ============ CLIP ============ -->
+  <section class="pane" id="pane-clip">
+    <div class="drop" id="dropClip">
+      <input type="file" id="fileClip" accept="video/*" aria-label="Choose a clip">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></div>
+      <h3>Drop a short clip here</h3>
+      <p>A few seconds is plenty. Three frames are pulled from the clip on your phone and matched — the video itself never leaves your device.</p>
+    </div>
+    <div class="preview" id="prevClip"><canvas id="prevClipCv"></canvas><div class="info"><b id="prevClipName"></b><span id="prevClipMeta"></span><div class="frames" id="clipFrames"></div></div></div>
+    <div class="status" id="statClip"></div>
+    <div class="hits" id="hitsClip"></div>
+  </section>
+
+  <!-- ============ SOUND ============ -->
+  <section class="pane" id="pane-sound">
+    <p class="sub">Two ways in. Type anything you remember about the song — a lyric, the title, the singer — and it's matched against the opening and ending database. Or record the music playing nearby and let it be identified.</p>
+    <div class="suggest-wrap">
+      <div class="searchbar">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18V6l11-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
+        <input id="songQ" type="search" placeholder="Lyric, song title, or artist…" autocomplete="off" aria-label="Search by song">
+        <span class="spin"></span>
+        <button class="clear" aria-label="Clear">✕</button>
+      </div>
+    </div>
+
+    <div class="rec-row">
+      <button class="btn btn-outline btn-sm rec-btn" id="recBtn">● Record 10 seconds</button>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer">Upload audio<input type="file" id="fileAudio" accept="audio/*" style="display:none"></label>
+      <div class="meter"><i id="meter"></i></div>
+    </div>
+    <p class="tiny" id="audioNote"></p>
+    <div class="status" id="statSound"></div>
+    <div class="hits" id="hitsSound"></div>
+  </section>
+
+  <p class="tiny" style="margin-top:30px">Scene matching by <a href="https://trace.moe" target="_blank" rel="noopener">trace.moe</a>. Songs by <a href="https://animethemes.moe" target="_blank" rel="noopener">AnimeThemes</a>. Titles by <a href="https://anilist.co" target="_blank" rel="noopener">AniList</a>. Images stay on your device except the single frame sent for matching.</p>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-bot">
+      <p>© 2026 Anime World · Built by <span style="color:var(--accent);font-weight:600">Tawsikul Islam</span></p>
+      <p>Scene search by trace.moe</p>
+    </div>
+  </div>
+</footer>
+
+<div id="toasts"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="site-config.js"></script>
+<script src="firebase-config.js"></script>
+<script src="shared.js"></script>
+<script src="stage.js"></script>
+<script>
+/* ==========================================================
+   FIND BY SCENE
+   screenshot → trace.moe → AniList id → the detail sheet
+   clip       → 3 frames pulled locally → same as above, merged
+   sound      → text: AnimeThemes → AniList
+                audio: AudD (key in site-config) → AnimeThemes → AniList
+   ========================================================== */
+const TRACE = 'https://api.trace.moe/search?anilistInfo&cutBorders';
+const THEMES = 'https://api.animethemes.moe/search';
+
+/* ---------- tabs ---------- */
+$$('.mode').forEach(b => b.addEventListener('click', () => {
+  $$('.mode').forEach(x => x.classList.toggle('on', x === b));
+  $$('.pane').forEach(p => p.classList.toggle('on', p.id === 'pane-' + b.dataset.mode));
+  Sfx.play('tick');
+}));
+
+const showStatus = (el, msg, busy = false, err = false) => {
+  el.className = 'status' + (err ? ' err' : '');
+  el.innerHTML = (busy ? '<span class="spin"></span>' : '') + esc(msg);
+};
+const fmtTime = s => { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60); return m + ':' + String(s % 60).padStart(2, '0'); };
+
+/* ---------- image prep: downscale so uploads are quick on phones ---------- */
+function fileToBitmap(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file); const im = new Image();
+    im.onload = () => { URL.revokeObjectURL(url); res(im); };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('That file could not be read as an image.')); };
+    im.src = url;
+  });
+}
+function toJpeg(source, maxW = 1280) {
+  const w = source.videoWidth || source.naturalWidth || source.width, h = source.videoHeight || source.naturalHeight || source.height;
+  const k = Math.min(1, maxW / w);
+  const cv = document.createElement('canvas'); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+  cv.getContext('2d').drawImage(source, 0, 0, cv.width, cv.height);
+  return new Promise(res => cv.toBlob(b => res({ blob: b, canvas: cv }), 'image/jpeg', .86));
+}
+
+/* ---------- trace.moe ---------- */
+async function traceSearch(blob) {
+  const r = await fetch(TRACE, { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
+  if (r.status === 429) throw new Error('Too many searches for now — wait a minute and try again.');
+  if (r.status === 402) throw new Error('The free search quota is used up for this month.');
+  if (!r.ok) throw new Error('The scene search service is not responding (' + r.status + ').');
+  const j = await r.json();
+  if (j.error) throw new Error(j.error);
+  return (j.result || []).filter(x => x.anilist && !x.anilist.isAdult);
+}
+/* merge hits from several frames: best similarity per title */
+function mergeHits(lists) {
+  const best = new Map();
+  lists.flat().forEach(h => {
+    const id = h.anilist.id || h.anilist;
+    if (!best.has(id) || h.similarity > best.get(id).similarity) best.set(id, h);
+  });
+  return [...best.values()].sort((a, b) => b.similarity - a.similarity).slice(0, 6);
+}
+
+async function renderTraceHits(el, hits) {
+  if (!hits.length) { el.innerHTML = `<div class="empty"><strong>No match</strong>Try a clearer frame with no text over it, or a different moment.</div>`; return; }
+  const ids = hits.map(h => h.anilist.id);
+  let media = [];
+  try {
+    const d = await gql(`query($ids:[Int]){ Page(perPage:10){ media(id_in:$ids, type:ANIME){ ${MEDIA_FIELDS} } } }`, { ids }, 'find');
+    media = stash(d.Page.media);
+  } catch (e) { if (isStale(e)) return; }
+  const byId = new Map(media.map(m => [m.id, m]));
+  el.innerHTML = hits.map((h, i) => {
+    const m = byId.get(h.anilist.id);
+    const title = m ? titleOf(m) : (h.anilist.title?.english || h.anilist.title?.romaji || 'Unknown');
+    const pct = Math.round(h.similarity * 100);
+    const ep = h.episode != null && h.episode !== '' ? `Episode <b>${esc(String(h.episode))}</b> · ` : '';
+    return `<div class="hit${i === 0 && pct >= 85 ? ' top' : ''}" data-id="${h.anilist.id}" style="animation-delay:${i * 60}ms">
+      <img class="scene" src="${esc(h.image || '')}" alt="" loading="lazy" onerror="this.className='cover';this.src='${esc(m?.coverImage?.large || '')}'">
+      <div>
+        <h3>${esc(title)}</h3>
+        <div class="m">${ep}at <b>${fmtTime(h.from)}</b>${m?.seasonYear ? ' · ' + m.seasonYear : ''}${m?.format ? ' · ' + esc(m.format.replace('_', ' ')) : ''}</div>
+        <div class="conf"><i data-w="${pct}"></i></div>
+        <div class="cl">${pct}% similar${pct < 85 ? ' — low confidence' : ''}</div>
+      </div></div>`;
+  }).join('');
+  requestAnimationFrame(() => $$('.conf i', el).forEach(i => i.style.width = i.dataset.w + '%'));
+  Sfx.play(hits[0].similarity >= .85 ? 'save' : 'tick');
+}
+document.addEventListener('click', e => {
+  const h = e.target.closest('.hit[data-id]');
+  if (h) openSheet(h.dataset.id);
+});
+
+/* ---------- screenshot ---------- */
+async function runShot(file) {
+  const stat = $('#statShot'), hits = $('#hitsShot');
+  hits.innerHTML = '';
+  if (!file || !file.type.startsWith('image/')) return showStatus(stat, 'That is not an image.', false, true);
+  try {
+    const im = await fileToBitmap(file);
+    const { blob, canvas } = await toJpeg(im);
+    $('#prevShotImg').src = canvas.toDataURL('image/jpeg', .7);
+    $('#prevShotName').textContent = file.name || 'Pasted image';
+    $('#prevShotMeta').textContent = `${im.naturalWidth}×${im.naturalHeight} · ${(blob.size / 1024).toFixed(0)} KB sent`;
+    $('#prevShot').classList.add('on');
+    showStatus(stat, 'Matching against the frame database…', true);
+    const res = await traceSearch(blob);
+    showStatus(stat, res.length ? `${res.length} candidate${res.length === 1 ? '' : 's'}` : 'Nothing close enough.');
+    await renderTraceHits(hits, mergeHits([res]));
+  } catch (e) { showStatus(stat, e.message || 'Search failed.', false, true); }
+}
+$('#fileShot').addEventListener('change', e => runShot(e.target.files[0]));
+document.addEventListener('paste', e => {
+  const f = [...(e.clipboardData?.files || [])].find(x => x.type.startsWith('image/'));
+  if (f) { $$('.mode')[0].click(); runShot(f); }
+});
+
+/* ---------- clip ---------- */
+function grabFrames(file, count = 3) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    v.muted = true; v.playsInline = true; v.preload = 'metadata'; v.src = url;
+    const frames = [];
+    const fail = msg => { URL.revokeObjectURL(url); rej(new Error(msg)); };
+    v.onerror = () => fail('That video format could not be decoded by your browser.');
+    v.onloadedmetadata = async () => {
+      const d = v.duration;
+      if (!isFinite(d) || d <= 0) return fail('Could not read the clip length.');
+      const points = Array.from({ length: count }, (_, i) => d * (i + 1) / (count + 1));
+      for (const t of points) {
+        await new Promise(ok => { v.onseeked = ok; v.currentTime = Math.min(t, Math.max(0, d - .05)); });
+        frames.push(await toJpeg(v, 960));
+      }
+      URL.revokeObjectURL(url);
+      res({ frames, duration: d, w: v.videoWidth, h: v.videoHeight });
+    };
+  });
+}
+async function runClip(file) {
+  const stat = $('#statClip'), hits = $('#hitsClip');
+  hits.innerHTML = '';
+  if (!file || !file.type.startsWith('video/')) return showStatus(stat, 'That is not a video.', false, true);
+  try {
+    showStatus(stat, 'Pulling frames from the clip…', true);
+    const { frames, duration, w, h } = await grabFrames(file);
+    const pv = $('#prevClipCv'); pv.width = frames[1].canvas.width; pv.height = frames[1].canvas.height;
+    pv.getContext('2d').drawImage(frames[1].canvas, 0, 0);
+    $('#prevClipName').textContent = file.name;
+    $('#prevClipMeta').textContent = `${fmtTime(duration)} · ${w}×${h}`;
+    const fr = $('#clipFrames'); fr.innerHTML = '';
+    frames.forEach(f => { const c = document.createElement('canvas'); c.width = f.canvas.width; c.height = f.canvas.height; c.getContext('2d').drawImage(f.canvas, 0, 0); fr.appendChild(c); });
+    $('#prevClip').classList.add('on');
+    showStatus(stat, `Matching ${frames.length} frames…`, true);
+    const lists = [];
+    for (const f of frames) { lists.push(await traceSearch(f.blob)); }
+    const merged = mergeHits(lists);
+    showStatus(stat, merged.length ? `${merged.length} candidate${merged.length === 1 ? '' : 's'} across ${frames.length} frames` : 'Nothing close enough.');
+    await renderTraceHits(hits, merged);
+  } catch (e) { showStatus(stat, e.message || 'Search failed.', false, true); }
+}
+$('#fileClip').addEventListener('change', e => runClip(e.target.files[0]));
+
+/* drag & drop for both */
+[['dropShot', runShot], ['dropClip', runClip]].forEach(([id, fn]) => {
+  const z = $('#' + id);
+  ['dragenter', 'dragover'].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.classList.remove('over'); }));
+  z.addEventListener('drop', e => { const f = e.dataTransfer?.files?.[0]; if (f) fn(f); });
+});
+
+/* ---------- sound: text → AnimeThemes → AniList ---------- */
+async function themesSearch(q) {
+  const u = THEMES + '?q=' + encodeURIComponent(q) + '&fields[search]=anime,songs&include[song]=animethemes.anime&page[limit]=8';
+  const r = await fetch(u, { headers: { Accept: 'application/json' } });
+  if (!r.ok) throw new Error('themes');
+  const j = await r.json();
+  const names = new Map();  // anime name -> song title (when the hit came via a song)
+  (j.search?.songs || []).forEach(s => (s.animethemes || []).forEach(t => {
+    if (t.anime?.name && !names.has(t.anime.name)) names.set(t.anime.name, s.title);
+  }));
+  (j.search?.anime || []).forEach(a => { if (!names.has(a.name)) names.set(a.name, null); });
+  return [...names.entries()].slice(0, 6);
+}
+async function resolveTitles(pairs, el, stat) {
+  if (!pairs.length) { el.innerHTML = `<div class="empty"><strong>No match</strong>Try the song title in Japanese, or the artist's name.</div>`; return; }
+  const found = [];
+  for (const [name, song] of pairs) {
+    try {
+      const d = await gql(`query($q:String){ Page(perPage:1){ media(type:ANIME, search:$q, sort:SEARCH_MATCH, isAdult:false){ ${MEDIA_FIELDS} } } }`, { q: name }, 'find-' + name);
+      const m = stash(d.Page.media)[0];
+      if (m && !found.some(f => f.m.id === m.id)) found.push({ m, song });
+    } catch (e) { if (isStale(e)) return; }
+  }
+  if (!found.length) { el.innerHTML = `<div class="empty"><strong>No match</strong>The song was found but its anime is not in the catalogue.</div>`; return; }
+  el.innerHTML = found.map(({ m, song }, i) => `
+    <div class="hit${i === 0 ? ' top' : ''}" data-id="${m.id}" style="animation-delay:${i * 60}ms">
+      <img class="cover" src="${esc(m.coverImage?.large || '')}" alt="" data-fb="${esc(titleOf(m))}">
+      <div><h3>${esc(titleOf(m))}</h3>
+        <div class="m">${song ? 'Song: <b>' + esc(song) + '</b> · ' : ''}${m.seasonYear || ''}${m.format ? ' · ' + esc(m.format.replace('_', ' ')) : ''}</div>
+        <div class="cl">${esc((m.genres || []).slice(0, 3).join(' · '))}</div></div>
+    </div>`).join('');
+  armFallbacks(el);
+  Sfx.play('save');
+}
+async function runSongText(q) {
+  const stat = $('#statSound'), hits = $('#hitsSound');
+  hits.innerHTML = '';
+  if (!q || q.length < 2) { showStatus(stat, ''); return; }
+  showStatus(stat, 'Searching openings and endings…', true);
+  try {
+    let pairs;
+    try { pairs = await themesSearch(q); }
+    catch { pairs = [[q, null]]; }            // service down → plain title search
+    showStatus(stat, pairs.length ? `${pairs.length} possible ${pairs.length === 1 ? 'title' : 'titles'}` : 'Nothing found.');
+    await resolveTitles(pairs, hits, stat);
+  } catch (e) { showStatus(stat, e.message || 'Search failed.', false, true); }
+}
+makeSearch({ input: $('#songQ'), suggest: false, delay: 350, onSearch: runSongText });
+
+/* ---------- sound: audio → AudD → AnimeThemes ---------- */
+const auddToken = (typeof SITE !== 'undefined' && SITE.auddToken) || '';
+$('#audioNote').innerHTML = auddToken
+  ? 'Recording identifies the song playing near you, then finds its anime. Works for openings, endings and most soundtrack pieces.'
+  : 'Recording needs a free key from <a href="https://audd.io" target="_blank" rel="noopener">audd.io</a> — paste it into <code>site-config.js</code> as <code>auddToken</code>. Typing a lyric or title above works without one.';
+
+async function identifyAudio(blob) {
+  const stat = $('#statSound'), hits = $('#hitsSound');
+  hits.innerHTML = '';
+  if (!auddToken) return showStatus(stat, 'Add an audd.io key in site-config.js to identify recordings.', false, true);
+  showStatus(stat, 'Identifying the song…', true);
+  try {
+    const fd = new FormData(); fd.append('api_token', auddToken); fd.append('file', blob, 'clip.webm');
+    const r = await fetch('https://api.audd.io/', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (j.status !== 'success') throw new Error(j.error?.error_message || 'The identification service refused the request.');
+    if (!j.result) return showStatus(stat, 'Could not recognise that. Try recording closer to the speaker, with less noise.', false, true);
+    const { title, artist } = j.result;
+    showStatus(stat, `Heard “${title}” by ${artist}. Finding its anime…`, true);
+    let pairs;
+    try { pairs = await themesSearch(title); } catch { pairs = [[title, null]]; }
+    showStatus(stat, `Heard “${title}” by ${artist}`);
+    await resolveTitles(pairs, hits, stat);
+  } catch (e) { showStatus(stat, e.message || 'Identification failed.', false, true); }
+}
+$('#fileAudio').addEventListener('change', e => { const f = e.target.files[0]; if (f) identifyAudio(f); });
+
+let recorder = null, recStream = null;
+$('#recBtn').addEventListener('click', async () => {
+  const btn = $('#recBtn');
+  if (recorder) { recorder.stop(); return; }
+  if (!auddToken) { toast('Add an audd.io key in site-config.js first', true); return; }
+  try {
+    recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch { return toast('Microphone access was blocked', true); }
+  const chunks = [];
+  recorder = new MediaRecorder(recStream);
+  recorder.ondataavailable = e => chunks.push(e.data);
+  recorder.onstop = () => {
+    recStream.getTracks().forEach(t => t.stop()); recStream = null; recorder = null;
+    btn.classList.remove('live'); btn.textContent = '● Record 10 seconds'; $('#meter').style.width = '0';
+    cancelAnimationFrame(meterRaf);
+    identifyAudio(new Blob(chunks, { type: chunks[0]?.type || 'audio/webm' }));
+  };
+  recorder.start();
+  btn.classList.add('live'); btn.textContent = '■ Listening…';
+  Sfx.play('tick');
+  /* level meter */
+  const ac = new (window.AudioContext || window.webkitAudioContext)(); const src = ac.createMediaStreamSource(recStream);
+  const an = ac.createAnalyser(); an.fftSize = 512; src.connect(an); const buf = new Uint8Array(an.frequencyBinCount);
+  let meterRaf;
+  (function level() { an.getByteTimeDomainData(buf); let s = 0; for (const v of buf) s += (v - 128) ** 2; const rms = Math.sqrt(s / buf.length) / 128;
+    $('#meter').style.width = Math.min(100, rms * 260) + '%'; meterRaf = requestAnimationFrame(level); })();
+  setTimeout(() => { if (recorder && recorder.state === 'recording') recorder.stop(); ac.close(); }, 10000);
+});
+</script>
+</body>
+</html>
